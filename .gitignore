@@ -1,0 +1,55 @@
+# Output directories
+/outputs/
+/exp_results/
+/logs/
+/results/
+
+# Environment and secrets
+.env
+*.env
+!.env.example
+
+# Generation pipeline
+/generation/*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+/.venv/
+/.venv_verify/
+venv/
+env/
+
+# IDE and OS files
+.DS_Store
+*.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+/requirements_frozen.txt
+/tests/
+/docker/
+/.serena/
+/.spec-workflow/
+/list/
+
+# Runtime artifacts
+/.memos/
+/.tmp/
+
+# Logs
+*.log
