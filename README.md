@@ -9,17 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://huggingface.co/datasets/Cyan27/MedMemoryBench" target="_blank">
-    <img src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Dataset-yellow" alt="HuggingFace Dataset"/>
-  </a>
-  &nbsp;
-  <a href="#citations" target="_blank">
-    <img src="https://img.shields.io/badge/%F0%9F%93%84%20Preprint-Coming%20Soon-lightgrey" alt="Preprint"/>
-  </a>
-  &nbsp;
-  <a href="README_ZH.md">
-    <img src="https://img.shields.io/badge/%F0%9F%8C%90%20%E4%B8%AD%E6%96%87-README-blue" alt="中文"/>
-  </a>
+｜🤗 <a href="https://huggingface.co/datasets/Cyan27/MedMemoryBench" target="_blank">HuggingFace Dataset</a> ｜
+📄 <a href="#-citations">Preprint (Coming Soon)</a> ｜
+🌐 <a href="README_ZH.md">中文</a> ｜
 </p>
 
 <p align="center">
@@ -93,17 +85,6 @@
 </td>
 </tr>
 </table>
-
-### Query Types
-
-| Type | Count | Description |
-|:-----|:-----:|:------------|
-| `entity_exact_match` | 400 | Factual recall of medical entities |
-| `temporal_localization` | 400 | Time-related clinical reasoning |
-| `multiple_choice` | 398 | Multi-choice medical QA |
-| `inference_generation` | 397 | Open-ended clinical inference |
-| `state_update` | 200 | Tracking evolving patient states |
-| `multi_hop_clinical_deduction` | 191 | Multi-hop clinical reasoning |
 
 ## 📁 Project Structure
 
@@ -301,7 +282,7 @@ LETTA_DIR=.tmp/letta_runtime
 ```
 
 > **Tips:**
-> - For Letta with BigModel, set `BIGMODEL_API_KEY` / `BIGMODEL_BASE_URL` first; the framework maps them to OpenAI-compatible settings internally.
+> - For BigModel, set `BIGMODEL_API_KEY` / `BIGMODEL_BASE_URL` first; the framework maps them to OpenAI-compatible settings internally.
 > - `LETTA_DIR` is recommended to avoid stale SQLite metadata from previous Letta runs.
 
 ### 4. Run Evaluation
@@ -323,35 +304,9 @@ python main.py -m embedding_rag_gpt-5.1 -d medmemorybench --dry-run
 
 # Resume from checkpoint
 python main.py -m embedding_rag_gpt-5.1 -d medmemorybench --resume
-
-# List available methods / datasets
-python main.py --list-methods
-python main.py --list-datasets
 ```
 
-> 💡 **Extending with a new method?** See [`methods/README.md`](methods/README.md) for the step-by-step guide.
-
-<details>
-<summary><b>Troubleshooting (Letta + BigModel)</b></summary>
-
-#### `curl` works, but Letta reports `401` / `forbidden`
-
-Letta runtime may read a different credential source. Verify in the same shell:
-
-```bash
-python -c "from src.config import load_env_config; c=load_env_config(); \
-  print(bool(c.bigmodel_api_key or c.openai_api_key), c.bigmodel_base_url or c.openai_base_url)"
-```
-
-#### Letta fails with SQLite schema / migration errors
-
-Set `LETTA_DIR` to an isolated project-local path (e.g. `.tmp/letta_runtime`) and re-run.
-
-#### Intermittent timeout / handshake timeout
-
-Usually transient network/proxy instability. Retry in a quiet period and ensure proxy settings are consistent.
-
-</details>
+<!-- > 💡 **Extending with a new method?** See [`methods/README.md`](methods/README.md) for the step-by-step guide. -->
 
 ## 🔧 Configuration
 

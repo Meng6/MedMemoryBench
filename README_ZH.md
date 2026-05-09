@@ -9,17 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://huggingface.co/datasets/Cyan27/MedMemoryBench" target="_blank">
-    <img src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Dataset-yellow" alt="HuggingFace Dataset"/>
-  </a>
-  &nbsp;
-  <a href="#引用" target="_blank">
-    <img src="https://img.shields.io/badge/%F0%9F%93%84%20Preprint-Coming%20Soon-lightgrey" alt="Preprint"/>
-  </a>
-  &nbsp;
-  <a href="README.md">
-    <img src="https://img.shields.io/badge/%F0%9F%8C%90%20English-README-blue" alt="English"/>
-  </a>
+｜🤗 <a href="https://huggingface.co/datasets/Cyan27/MedMemoryBench" target="_blank">HuggingFace Dataset</a> ｜
+📄 <a href="#-引用">Preprint (Coming Soon)</a> ｜
+🌐 <a href="README.md">English</a> ｜
 </p>
 
 <p align="center">
