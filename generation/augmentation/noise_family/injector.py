@@ -86,7 +86,7 @@ class FamilyNoiseInjector:
         # Sort positions
         positions.sort()
 
-        logger.info(f"  Noise distribution: interval counts {noise_counts}, Total {len(positions)} 个")
+        logger.info(f"  Noise distribution: interval counts {noise_counts}, total {len(positions)} positions")
         return positions
 
     def load_original_data(self) -> Dict[str, Any]:

@@ -26,11 +26,11 @@ class MedSession(Session):
 
         if self.is_noise:
             if self.noise_type == "family_health_consultation" and self.family_role:
-                role_name = self.family_role.get('name', '亲人')
+                role_name = self.family_role.get('name', 'Family member')
                 relationship = self.family_role.get('relationship', '')
-                lines.append(f"[关于{role_name}({relationship})的健康咨询记录]")
+                lines.append(f"[Health consultation record about {role_name}({relationship})]")
             else:
-                lines.append("[健康咨询记录]")
+                lines.append("[Health consultation record]")
         else:
             date_str = self.timestamp or self.event_info.get('date', 'N/A')
             lines.append(f"[{date_str}]")
@@ -43,9 +43,9 @@ class MedSession(Session):
                 role = msg.get("role", "unknown")
                 content = msg.get("content", "")
                 if role == "user":
-                    lines.append(f"患者: {content}")
+                    lines.append(f"Patient: {content}")
                 elif role == "assistant":
-                    lines.append(f"医生: {content}")
+                    lines.append(f"Doctor: {content}")
                 lines.append("")
         elif self.content:
             lines.append(self.content)
@@ -149,9 +149,9 @@ class MedMemoryBenchDataset(BaseDataset):
                         role = msg.get("role", "")
                         text = msg.get("content", "")
                         if role == "user":
-                            content_lines.append(f"患者: {text}")
+                            content_lines.append(f"Patient: {text}")
                         elif role == "assistant":
-                            content_lines.append(f"医生: {text}")
+                            content_lines.append(f"Doctor: {text}")
                     content = "\n\n".join(content_lines)
 
                     event_info = s.get("event_info", {})

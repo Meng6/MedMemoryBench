@@ -518,9 +518,9 @@ class FamilyDialogueGenerator:
         # Per-role knowledge points (role_key -> knowledge_points)
         self._role_knowledge_points: Dict[str, List[Dict[str, Any]]] = {}
 
-        logger.info("[FamilyDialogueGenerator] Initializecomplete")
+        logger.info("[FamilyDialogueGenerator] Initialization complete")
         logger.info(f"  Model: {self.model}")
-        logger.info(f"  每个角色的Session数: {self.config.sessions_per_role}")
+        logger.info(f"  Sessions per role: {self.config.sessions_per_role}")
 
     def _load_api_config(self) -> None:
         """Load API config."""
@@ -623,7 +623,7 @@ class FamilyDialogueGenerator:
             data = json.load(f)
 
         personas = data.get("personas", [])
-        logger.info(f"  Load了 {len(personas)} 个User persona")
+        logger.info(f"  Loaded {len(personas)} user personas")
         return personas
 
     async def generate_family_roles(self, persona: Dict[str, Any]) -> List[FamilyRole]:
@@ -636,7 +636,7 @@ class FamilyDialogueGenerator:
             List of generated family roles with detailed health conditions.
         """
         persona_id = persona["persona_id"]
-        logger.info(f"[FamilyDialogueGenerator] 为 Persona {persona_id} Generatefamily角色")
+        logger.info(f"[FamilyDialogueGenerator] Generating family roles for persona {persona_id}")
 
         # Build user persona info
         base_info = persona.get("base_info", {})
@@ -664,12 +664,12 @@ class FamilyDialogueGenerator:
 
             # Check if response content is empty
             if not content:
-                logger.warning("[FamilyDialogueGenerator] LLM Return内容为空，使用Default角色")
+                logger.warning("[FamilyDialogueGenerator] LLM returned empty content, using default roles")
                 default_roles = self._generate_default_roles(persona_id)
                 self._roles_by_persona[persona_id] = default_roles
                 return default_roles
 
-            logger.debug(f"[FamilyDialogueGenerator] LLM 原始Return（前500字符）: {content[:500]}")
+            logger.debug(f"[FamilyDialogueGenerator] LLM raw response (first 500 chars): {content[:500]}")
 
             # Parse JSON - try multiple extraction methods
             json_content = content
@@ -684,7 +684,7 @@ class FamilyDialogueGenerator:
 
             # If extracted content is empty, try parsing original content directly
             if not json_content:
-                logger.warning("[FamilyDialogueGenerator] JSON 提取Result为空，尝试直接ParseOriginal content")
+                logger.warning("[FamilyDialogueGenerator] JSON extraction result is empty, trying to parse original content directly")
                 json_content = content
 
             # Try to find the start and end of JSON array
@@ -695,7 +695,7 @@ class FamilyDialogueGenerator:
                     if end_idx != -1:
                         json_content = json_content[start_idx:end_idx + 1]
 
-            logger.debug(f"[FamilyDialogueGenerator] 提取的 JSON（前500字符）: {json_content[:500] if json_content else '空'}")
+            logger.debug(f"[FamilyDialogueGenerator] Extracted JSON (first 500 chars): {json_content[:500] if json_content else 'empty'}")
 
             roles_data = json.loads(json_content)
 
@@ -741,22 +741,22 @@ class FamilyDialogueGenerator:
                 )
                 roles.append(role)
 
-                logger.info(f"  角色 {idx+1}: {role.name}({role.relationship}), "
-                           f"{len(health_conditions)} 个健康Question")
+                logger.info(f"  Role {idx+1}: {role.name}({role.relationship}), "
+                           f"{len(health_conditions)} health questions")
 
             self._roles_by_persona[persona_id] = roles
             return roles
 
         except json.JSONDecodeError as e:
             logger.error(f"[FamilyDialogueGenerator] JSON ParseFailed: {e}")
-            logger.error(f"[FamilyDialogueGenerator] 待Parse内容（前1000字符）: {json_content[:1000] if 'json_content' in dir() and json_content else '空'}")
-            logger.error(f"[FamilyDialogueGenerator] 原始Return（前1000字符）: {content[:1000] if 'content' in dir() and content else '空'}")
+            logger.error(f"[FamilyDialogueGenerator] Content to parse (first 1000 chars): {json_content[:1000] if 'json_content' in dir() and json_content else 'empty'}")
+            logger.error(f"[FamilyDialogueGenerator] Raw response (first 1000 chars): {content[:1000] if 'content' in dir() and content else 'empty'}")
             # Return default roles
             default_roles = self._generate_default_roles(persona_id)
             self._roles_by_persona[persona_id] = default_roles
             return default_roles
         except Exception as e:
-            logger.error(f"[FamilyDialogueGenerator] 角色GenerateFailed: {e}")
+            logger.error(f"[FamilyDialogueGenerator] Role generation failed: {e}")
             # Return default roles
             default_roles = self._generate_default_roles(persona_id)
             self._roles_by_persona[persona_id] = default_roles
@@ -1121,7 +1121,7 @@ class FamilyDialogueGenerator:
             focus = focus.strip('"\'')
             return focus
         except Exception as e:
-            logger.warning(f"[FamilyDialogueGenerator] 咨询重点选择Failed: {e}")
+            logger.warning(f"[FamilyDialogueGenerator] Consultation focus selection failed: {e}")
             # Round-robin selection of health conditions
             if role.health_conditions:
                 idx = session_idx % len(role.health_conditions)
@@ -1172,7 +1172,7 @@ class FamilyDialogueGenerator:
         try:
             return self._call_llm(llm_messages, caller="_generate_user_turn")
         except Exception as e:
-            logger.error(f"[FamilyDialogueGenerator] User轮次GenerateFailed: {e}")
+            logger.error(f"[FamilyDialogueGenerator] User turn generation failed: {e}")
             return f"医生您好，我想咨询一下{role.name}的{consultation_focus}。"
 
     async def _generate_doctor_turn(
@@ -1199,7 +1199,7 @@ class FamilyDialogueGenerator:
         try:
             return self._call_llm(llm_messages, caller="_generate_doctor_turn")
         except Exception as e:
-            logger.error(f"[FamilyDialogueGenerator] 医生轮次GenerateFailed: {e}")
+            logger.error(f"[FamilyDialogueGenerator] Doctor turn generation failed: {e}")
             return "根据您描述的情况，我给您几点建议..."
 
     async def _extract_session_summary(
@@ -1228,7 +1228,7 @@ class FamilyDialogueGenerator:
                 max_tokens=800,
             )
         except Exception as e:
-            logger.warning(f"[FamilyDialogueGenerator] 摘要提取Failed: {e}")
+            logger.warning(f"[FamilyDialogueGenerator] Summary extraction failed: {e}")
             return f"关于{role.name}的{consultation_focus}咨询"
 
     async def _extract_knowledge_points(
@@ -1331,7 +1331,7 @@ class FamilyDialogueGenerator:
 
             return kps
         except Exception as e:
-            logger.warning(f"[FamilyDialogueGenerator] Knowledge points提取Failed: {e}")
+            logger.warning(f"[FamilyDialogueGenerator] Knowledge points extraction failed: {e}")
             return [{
                 "category": "family健康",
                 "name": f"{role.name}咨询",
@@ -1363,7 +1363,7 @@ class FamilyDialogueGenerator:
         # Select consultation focus
         consultation_focus = await self._select_consultation_focus(role, session_idx)
 
-        logger.info(f"[FamilyDialogueGenerator] GenerateSession {noise_family_id}: "
+        logger.info(f"[FamilyDialogueGenerator] Generating session {noise_family_id}: "
                    f"{role.name}({role.relationship}) - {consultation_focus}")
 
         # Determine dialogue turn count
@@ -1427,8 +1427,8 @@ class FamilyDialogueGenerator:
         )
 
         if self.config.verbose:
-            logger.info(f"  complete: {num_turns} 轮Dialogue, {len(knowledge_points)} 个Knowledge points")
-            logger.info(f"  角色 {role.name} Knowledge points累计: {len(self._role_knowledge_points[role_key])} 个")
+            logger.info(f"  Complete: {num_turns} turns of dialogue, {len(knowledge_points)} knowledge points")
+            logger.info(f"  Role {role.name} cumulative knowledge points: {len(self._role_knowledge_points[role_key])}")
 
         return session
 
@@ -1447,7 +1447,7 @@ class FamilyDialogueGenerator:
             List of generated noise sessions.
         """
         persona_id = persona["persona_id"]
-        logger.info(f"[FamilyDialogueGenerator] Start为 Persona {persona_id} Generatefamily咨询Session")
+        logger.info(f"[FamilyDialogueGenerator] Starting family consultation session generation for persona {persona_id}")
 
         # Generate family roles first (with detailed health conditions)
         roles = await self.generate_family_roles(persona)
@@ -1457,8 +1457,8 @@ class FamilyDialogueGenerator:
 
         # Generate sessions for each role
         for role in roles:
-            logger.info(f"  Process角色: {role.name}({role.relationship}), "
-                       f"{len(role.health_conditions)} 个健康Question")
+            logger.info(f"  Processing role: {role.name}({role.relationship}), "
+                       f"{len(role.health_conditions)} health questions")
             for session_idx in range(self.config.sessions_per_role):
                 session = await self.generate_session(
                     noise_family_id=current_id,
@@ -1469,7 +1469,7 @@ class FamilyDialogueGenerator:
                 sessions.append(session)
                 current_id += 1
 
-        logger.info(f"  Persona {persona_id} complete，共 {len(sessions)} 个Session")
+        logger.info(f"  Persona {persona_id} complete, total {len(sessions)} sessions")
         return sessions
 
     async def generate_all(self) -> List[FamilyNoiseSession]:
@@ -1489,7 +1489,7 @@ class FamilyDialogueGenerator:
             all_sessions.extend(sessions)
             current_id += len(sessions)
 
-        logger.info(f"[FamilyDialogueGenerator] Generatecomplete，共 {len(all_sessions)} 个NoiseSession")
+        logger.info(f"[FamilyDialogueGenerator] Generation complete, total {len(all_sessions)} noise sessions")
         return all_sessions
 
     def save_sessions(
@@ -1511,7 +1511,7 @@ class FamilyDialogueGenerator:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"[FamilyDialogueGenerator] NoiseSession已Save到: {output_path}")
+        logger.info(f"[FamilyDialogueGenerator] Noise sessions saved to: {output_path}")
 
     def save_roles(self, output_path: str) -> None:
         """Save generated family roles to file."""
@@ -1531,4 +1531,4 @@ class FamilyDialogueGenerator:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"[FamilyDialogueGenerator] family角色已Save到: {output_path}")
+        logger.info(f"[FamilyDialogueGenerator] Family roles saved to: {output_path}")

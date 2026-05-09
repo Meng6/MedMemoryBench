@@ -118,30 +118,30 @@ class EventService:
         enriched = persona.enriched_data or {}
 
         parts = [
-            f"性别: {base.gender if base else '未知'}",
-            f"年龄段: {enriched.get('age_range', '未知')}",
-            f"职业: {enriched.get('occupation_detail', '未知')}",
-            f"UserType: {base.type_name if base else '未知'}",
-            f"核心特征: {base.core_feature if base else '未知'}",
-            f"健康目标: {', '.join(base.health_goals) if base and base.health_goals else '未知'}",
+            f"Gender: {base.gender if base else 'Unknown'}",
+            f"Age range: {enriched.get('age_range', 'Unknown')}",
+            f"Occupation: {enriched.get('occupation_detail', 'Unknown')}",
+            f"User type: {base.type_name if base else 'Unknown'}",
+            f"Core feature: {base.core_feature if base else 'Unknown'}",
+            f"Health goals: {', '.join(base.health_goals) if base and base.health_goals else 'Unknown'}",
         ]
 
         health_details = enriched.get("health_details", {})
         if health_details.get("medical_history"):
-            parts.append(f"既往病史: {', '.join(health_details['medical_history'])}")
+            parts.append(f"Medical history: {', '.join(health_details['medical_history'])}")
 
         lifestyle = enriched.get("lifestyle", {})
         if lifestyle.get("diet_habits"):
-            parts.append(f"饮食习惯: {lifestyle['diet_habits']}")
+            parts.append(f"Diet habits: {lifestyle['diet_habits']}")
         if lifestyle.get("exercise_frequency"):
-            parts.append(f"运动频率: {lifestyle['exercise_frequency']}")
+            parts.append(f"Exercise frequency: {lifestyle['exercise_frequency']}")
         if lifestyle.get("stress_level"):
-            parts.append(f"压力水平: {lifestyle['stress_level']}")
+            parts.append(f"Stress level: {lifestyle['stress_level']}")
         if lifestyle.get("sleep_pattern"):
-            parts.append(f"睡眠模式: {lifestyle['sleep_pattern']}")
+            parts.append(f"Sleep pattern: {lifestyle['sleep_pattern']}")
 
         if enriched.get("background_story"):
-            parts.append(f"\n详细背景: {enriched['background_story']}")
+            parts.append(f"\nDetailed background: {enriched['background_story']}")
 
         return "\n".join(parts)
 
@@ -152,20 +152,20 @@ class EventService:
             Dict with 5-phase guidance, or None if not found.
         """
         if not USER_REPORT_PATH.exists():
-            logger.warning(f"[Event] Medical reportFile不存在: {USER_REPORT_PATH}")
+            logger.warning(f"[Event] Medical report file not found: {USER_REPORT_PATH}")
             return None
 
         try:
             with open(USER_REPORT_PATH, "r", encoding="utf-8") as f:
                 reports = json.load(f)
         except Exception as e:
-            logger.error(f"[Event] LoadMedical reportFailed: {e}")
+            logger.error(f"[Event] Failed to load medical report: {e}")
             return None
 
         # Find matching persona_id
         for report_key, report_data in reports.items():
             if report_data.get("persona_id") == persona_id:
-                logger.info(f"[Event] 找到 persona {persona_id} 的Medical report: {report_key}")
+                logger.info(f"[Event] Found medical report for persona {persona_id}: {report_key}")
                 return {
                     "phase_1": report_data.get("phase_1", ""),
                     "phase_2": report_data.get("phase_2", ""),
@@ -174,7 +174,7 @@ class EventService:
                     "phase_5": report_data.get("phase_5", ""),
                 }
 
-        logger.warning(f"[Event] not found persona {persona_id} 的Medical report")
+        logger.warning(f"[Event] Medical report not found for persona {persona_id}")
         return None
 
     def _normalize_events_data(self, events_data: list, default_date: str) -> list:
@@ -268,8 +268,8 @@ class EventService:
             )
             return health_condition.strip()
         except Exception as e:
-            logger.warning(f"[Event] 提取健康状况Failed: {e}，使用Default值")
-            return "User有健康相关Questionneed就医咨询"
+            logger.warning(f"[Event] Failed to extract health condition: {e}, using default")
+            return "User has health-related questions requiring consultation"
 
     async def _generate_single_trap_event(
         self,
@@ -281,7 +281,7 @@ class EventService:
         """Generate a single trap event of the specified type."""
         prompt_template = TRAP_EVENT_PROMPTS.get(trap_type)
         if not prompt_template:
-            logger.error(f"[Event] 未知的TrapEventType: {trap_type}")
+            logger.error(f"[Event] Unknown trap event type: {trap_type}")
             return None
 
         prompt = prompt_template.format(
@@ -301,7 +301,7 @@ class EventService:
             # Validate returned event type
             if result.get("type") != trap_type:
                 logger.warning(
-                    f"[Event] TrapEventType不匹配: 期望 {trap_type}，实际 {result.get('type')}"
+                    f"[Event] Trap event type mismatch: expected {trap_type}, got {result.get('type')}"
                 )
                 result["type"] = trap_type
 
@@ -356,9 +356,9 @@ class EventService:
         # Load treatment report
         treatment_report = self._load_treatment_report(persona_id)
         if treatment_report:
-            logger.info(f"[Event] 已Load persona {persona_id} 的诊疗流程报告")
+            logger.info(f"[Event] Loaded treatment report for persona {persona_id}")
         else:
-            logger.warning(f"[Event] persona {persona_id} 无Medical report，将使用Default阶段描述")
+            logger.warning(f"[Event] Persona {persona_id} has no medical report, using default phase descriptions")
 
         # Delete existing graph if present
         existing_graph = await self.get_event_graph(persona_id)
@@ -367,21 +367,21 @@ class EventService:
             await self.db.flush()
 
         logger.info(
-            f"[Event] Start为persona {persona_id} 分阶段GenerateEvent图谱 "
+            f"[Event] Starting phased event graph generation for persona {persona_id} "
             f"(events_per_phase={events_per_phase}, max_total_events={max_total_events})"
         )
 
         # ========== Step 2: Generate 6 fixed trap events ==========
-        logger.info("[Event] === Step 1: Generate6类固定性TrapEvent ===")
+        logger.info("[Event] === Step 1: Generate 6 fixed trap events ===")
         trap_events = await self._generate_trap_events_pure(
             persona_context=persona_context,
             start_date=start_date,
         )
         trap_count = len(trap_events)
-        logger.info(f"[Event] Generate了 {trap_count} 个TrapEvent（暂不分配ID，稍后插入第一阶段）")
+        logger.info(f"[Event] Generated {trap_count} trap events (IDs to be assigned later when inserted into phase 1)")
 
         # ========== Step 3: Generate regular events per phase ==========
-        logger.info("[Event] === Step 2: 按诊疗阶段分批Generate常规Event ===")
+        logger.info("[Event] === Step 2: Generate regular events by treatment phase ===")
         all_events: list[dict] = []
         num_phases = 5
         days_per_phase = time_span_days // num_phases
@@ -409,9 +409,9 @@ class EventService:
             if treatment_report:
                 phase_guidance = treatment_report.get(f"phase_{phase_num}", "")
 
-            phase_name = PHASE_NAMES.get(phase_num, f"阶段{phase_num}")
+            phase_name = PHASE_NAMES.get(phase_num, f"Phase {phase_num}")
             logger.info(
-                f"[Event] --- 阶段 {phase_num}/5: {phase_name} "
+                f"[Event] --- Phase {phase_num}/5: {phase_name} "
                 f"({phase_start_str} ~ {phase_end_str}) ---"
             )
 
@@ -420,7 +420,7 @@ class EventService:
             num_to_generate = min(events_per_phase, remaining)
 
             if num_to_generate <= 0:
-                logger.info(f"[Event] 已达到最大Event数，Skip阶段 {phase_num}")
+                logger.info(f"[Event] Max event count reached, skipping phase {phase_num}")
                 break
 
             # Generate regular events for this phase
@@ -437,7 +437,7 @@ class EventService:
             )
 
             if not phase_events:
-                logger.warning(f"[Event] 阶段 {phase_num} 未能GenerateEvent")
+                logger.warning(f"[Event] Phase {phase_num} failed to generate events")
                 continue
 
             # Assign temp_ids continuing from existing events
@@ -447,12 +447,12 @@ class EventService:
 
             all_events.extend(phase_events)
             logger.info(
-                f"[Event] 阶段 {phase_num} complete，本阶段 {len(phase_events)} 个Event，"
-                f"累计 {len(all_events)} 个常规Event（+ {trap_count} 个TrapEvent）"
+                f"[Event] Phase {phase_num} complete, this phase {len(phase_events)} events, "
+                f"total {len(all_events)} regular events (+ {trap_count} trap events)"
             )
 
         # ========== Step 4: Merge trap and regular events, sort by date ==========
-        logger.info("[Event] === Step 3: 合并Event并按Time排序 ===")
+        logger.info("[Event] === Step 3: Merge events and sort by time ===")
 
         # Assign random dates within phase 1 to trap events
         phase1_start_str = start_dt.strftime("%Y-%m-%d")
@@ -489,12 +489,12 @@ class EventService:
                 ]
 
         logger.info(
-            f"[Event] 合并complete：{len(final_events)} 个Event "
-            f"({trap_count} Trap + {len(all_events)} 常规)"
+            f"[Event] Merge complete: {len(final_events)} events "
+            f"({trap_count} Trap + {len(all_events)} regular)"
         )
 
         # ========== Step 5: Write to database ==========
-        logger.info(f"[Event] === Step 4: 写入Database（共 {len(final_events)} 个Event） ===")
+        logger.info(f"[Event] === Step 4: Write to database ({len(final_events)} events) ===")
 
         # Create event graph
         graph = EventGraph(
@@ -550,8 +550,8 @@ class EventService:
         final_count = len(graph.event_nodes) if graph.event_nodes else 0
         regular_count = final_count - trap_count
         logger.info(
-            f"[Event] Event图谱Generatecomplete: 共 {final_count} 个Event "
-            f"({trap_count} Trap + {regular_count} 常规)"
+            f"[Event] Event graph generation complete: {final_count} events "
+            f"({trap_count} Trap + {regular_count} regular)"
         )
 
         return graph
@@ -581,7 +581,7 @@ class EventService:
         persona_context = self._build_persona_context(persona)
         base_persona_id = persona.base_persona_id
 
-        logger.info(f"[Event] Start为persona {persona_id} (base_id={base_persona_id}) GenerateTrapEvent")
+        logger.info(f"[Event] Starting trap event generation for persona {persona_id} (base_id={base_persona_id})")
 
         # Generate trap events
         trap_events = await self._generate_trap_events_pure(
@@ -594,7 +594,7 @@ class EventService:
             event["temp_id"] = i + 1
             event["persona_id"] = persona_id
 
-        logger.info(f"[Event] persona {persona_id} (base_id={base_persona_id}) Generate了 {len(trap_events)} 个TrapEvent")
+        logger.info(f"[Event] Persona {persona_id} (base_id={base_persona_id}) generated {len(trap_events)} trap events")
         return trap_events
 
     async def generate_regular_events_only(
@@ -629,9 +629,9 @@ class EventService:
         # Load treatment report using base_persona_id (not expanded_persona_id)
         treatment_report = self._load_treatment_report(base_persona_id)
         if treatment_report:
-            logger.info(f"[Event] 已Load persona {persona_id} (base_id={base_persona_id}) 的诊疗流程报告")
+            logger.info(f"[Event] Loaded treatment report for persona {persona_id} (base_id={base_persona_id})")
         else:
-            logger.warning(f"[Event] persona {persona_id} (base_id={base_persona_id}) 无Medical report，将使用Default阶段描述")
+            logger.warning(f"[Event] Persona {persona_id} (base_id={base_persona_id}) has no medical report, using default phase descriptions")
 
         # Delete existing graph if present
         existing_graph = await self.get_event_graph(persona_id)
@@ -640,7 +640,7 @@ class EventService:
             await self.db.flush()
 
         logger.info(
-            f"[Event] Start为persona {persona_id} Generate常规Event "
+            f"[Event] Starting regular event generation for persona {persona_id} "
             f"(events_per_phase={events_per_phase}, max={max_total_events})"
         )
 
@@ -678,9 +678,9 @@ class EventService:
             if treatment_report:
                 phase_guidance = treatment_report.get(f"phase_{phase_num}", "")
 
-            phase_name = PHASE_NAMES.get(phase_num, f"阶段{phase_num}")
+            phase_name = PHASE_NAMES.get(phase_num, f"Phase {phase_num}")
             logger.info(
-                f"[Event] --- 阶段 {phase_num}/5: {phase_name} "
+                f"[Event] --- Phase {phase_num}/5: {phase_name} "
                 f"({phase_start_str} ~ {phase_end_str}) ---"
             )
 
@@ -689,7 +689,7 @@ class EventService:
             num_to_generate = min(events_per_phase, remaining)
 
             if num_to_generate <= 0:
-                logger.info(f"[Event] 已达到最大Event数，Skip阶段 {phase_num}")
+                logger.info(f"[Event] Max event count reached, skipping phase {phase_num}")
                 break
 
             # Generate regular events for this phase
@@ -706,7 +706,7 @@ class EventService:
             )
 
             if not phase_events:
-                logger.warning(f"[Event] 阶段 {phase_num} 未能GenerateEvent")
+                logger.warning(f"[Event] Phase {phase_num} failed to generate events")
                 continue
 
             # Assign temp_ids continuing from existing events
@@ -716,12 +716,12 @@ class EventService:
 
             all_events.extend(phase_events)
             logger.info(
-                f"[Event] 阶段 {phase_num} complete，本阶段 {len(phase_events)} 个Event，"
-                f"累计 {len(all_events)} 个常规Event（+ {trap_count} 个TrapEvent）"
+                f"[Event] Phase {phase_num} complete, this phase {len(phase_events)} events, "
+                f"total {len(all_events)} regular events (+ {trap_count} trap events)"
             )
 
         # Merge trap and regular events, sort by date
-        logger.info("[Event] 合并Event并按Time排序...")
+        logger.info("[Event] Merging events and sorting by time...")
 
         # Assign random dates within phase 1 to trap events
         for trap_event in trap_events_clean:
@@ -754,12 +754,12 @@ class EventService:
                 ]
 
         logger.info(
-            f"[Event] 合并complete：{len(final_events)} 个Event "
-            f"({trap_count} Trap + {len(all_events)} 常规)"
+            f"[Event] Merge complete: {len(final_events)} events "
+            f"({trap_count} Trap + {len(all_events)} regular)"
         )
 
         # Write to database
-        logger.info(f"[Event] 写入Database（共 {len(final_events)} 个Event）")
+        logger.info(f"[Event] Writing to database ({len(final_events)} events)")
 
         graph = EventGraph(
             expanded_persona_id=persona_id,
@@ -813,8 +813,8 @@ class EventService:
         final_count = len(graph.event_nodes) if graph.event_nodes else 0
         regular_count = final_count - trap_count
         logger.info(
-            f"[Event] Event图谱Generatecomplete: 共 {final_count} 个Event "
-            f"({trap_count} Trap + {regular_count} 常规)"
+            f"[Event] Event graph generation complete: {final_count} events "
+            f"({trap_count} Trap + {regular_count} regular)"
         )
 
         return graph
@@ -831,7 +831,7 @@ class EventService:
         """
         # Extract health condition
         health_condition = await self._extract_health_condition(persona_context)
-        logger.info(f"[Event] User健康状况: {health_condition[:100]}...")
+        logger.info(f"[Event] User health condition: {health_condition[:100]}...")
 
         # Generate content for each trap event type
         trap_events = []
@@ -848,7 +848,7 @@ class EventService:
             if event_data:
                 trap_events.append(event_data)
 
-        logger.info(f"[Event] Generate了 {len(trap_events)}/6 个TrapEvent")
+        logger.info(f"[Event] Generated {len(trap_events)}/6 trap events")
         return trap_events
 
     def _insert_trap_events_randomly(
@@ -886,8 +886,8 @@ class EventService:
             result.insert(insert_pos, trap_event)
 
         logger.info(
-            f"[Event] TrapEvent随机插入complete: {len(trap_events)} 个TrapEvent + "
-            f"{len(regular_events)} 个常规Event = {len(result)} 个Event"
+            f"[Event] Trap event random insertion complete: {len(trap_events)} trap events + "
+            f"{len(regular_events)} regular events = {len(result)} events"
         )
 
         return result
@@ -928,8 +928,8 @@ class EventService:
             max_existing_id=max_existing_id,
         )
 
-        phase_name = PHASE_NAMES.get(phase_number, f"阶段{phase_number}")
-        logger.info(f"[Event] Generate {phase_name} 的 {num_events} 个Event...")
+        phase_name = PHASE_NAMES.get(phase_number, f"Phase {phase_number}")
+        logger.info(f"[Event] Generating {num_events} events for {phase_name}...")
 
         # LLM call with retries
         events_data = []
@@ -943,10 +943,10 @@ class EventService:
 
             # Normalize new event data
             events_data = llm_result.get("events", [])
-            logger.info(f"[Event] LLM Return了 {len(events_data)} 个Event（规范化前，尝试 {attempt}/{max_retries}）")
+            logger.info(f"[Event] LLM returned {len(events_data)} events (before normalization, attempt {attempt}/{max_retries})")
 
             events_data = self._normalize_events_data(events_data, phase_start_date)
-            logger.info(f"[Event] 规范化后有 {len(events_data)} 个Event")
+            logger.info(f"[Event] After normalization: {len(events_data)} events")
 
             # Break if events generated successfully
             if events_data:
@@ -955,7 +955,7 @@ class EventService:
             # Retry if empty result
             if attempt < max_retries:
                 logger.warning(
-                    f"[Event] {phase_name} Return空Result，进行第 {attempt + 1} 次Retry..."
+                    f"[Event] {phase_name} returned empty result, retry {attempt + 1}..."
                 )
 
         return events_data
@@ -980,7 +980,7 @@ class EventService:
         """
         # Not yet implemented, fall back to standard generation
         logger.warning(
-            "[Event] _generate_phased_events_layered 尚未完整实现，回退到普通Generate"
+            "[Event] _generate_phased_events_layered not fully implemented, falling back to standard generation"
         )
         return await self._generate_phased_events_pure(
             persona_context=persona_context,
@@ -995,7 +995,7 @@ class EventService:
     def _format_existing_events_pure(self, events: list[dict]) -> str:
         """Format existing event list for use in prompts (pure dict version)."""
         if not events:
-            return "（暂无已有Event）"
+            return "(No existing events)"
 
         # Sort by date
         sorted_events = sorted(events, key=lambda e: e.get("event_date", ""))
@@ -1004,9 +1004,9 @@ class EventService:
         for event in sorted_events:
             triggered_by = event.get("triggered_by", [])
             triggered_by_str = (
-                f"（由Event {triggered_by} 触发）"
+                f"(Triggered by event {triggered_by})"
                 if triggered_by
-                else "（独立Event）"
+                else "(Independent event)"
             )
             event_text = event.get("event", "")
             lines.append(

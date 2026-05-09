@@ -118,10 +118,10 @@ def get_embedding_with_retry(embed_func, text, max_retries=5, base_delay=2.0):
 
         except Exception as e:
             logger.warning(
-                f"[Retry {attempt}/{max_retries}] Embedding API 调用失败: {e}"
+                f"[Retry {attempt}/{max_retries}] Embedding API call failed: {e}"
             )
             if attempt == max_retries:
-                logger.error("达到最大重试次数，仍未成功。")
+                logger.error("Max retries reached, still unsuccessful.")
                 raise
 
             sleep_time = base_delay * (2 ** (attempt - 1))
@@ -988,7 +988,7 @@ class MemoryService:
 
     # ----------------------- Timestamped cube helpers -----------------------
     def list_available_cube_timestamps(self) -> List[str]:
-        """列出当前 user 下的所有时间戳 cube 目录（按时间排序）。"""
+        """List all timestamped cube directories for the current user (sorted by time)."""
         import os
 
         user_dir = os.path.join(
@@ -1002,15 +1002,16 @@ class MemoryService:
         return sorted(ts_list)
 
     def get_current_cube_id(self) -> Optional[str]:
-        """返回当前默认使用的 cube_id。"""
+        """Return the currently active default cube_id."""
         return getattr(self, "default_cube_id", None)
 
     def switch_to_cube_timestamp(self, timestamp: str) -> None:
         """
-        切换到指定时间戳的历史 cube（只更改当前实例默认 cube，不清理/删除任何数据）。
+        Switch to a historical cube at the specified timestamp (only changes the current
+        instance's default cube, does not clean/delete any data).
 
         Args:
-            timestamp: 形如 YYYYmmdd_HHMMSS 的时间戳目录名
+            timestamp: Timestamp directory name in format YYYYmmdd_HHMMSS
         """
         import os
 
@@ -1637,7 +1638,7 @@ class MemoryService:
                 retrieved_ids = retrieved_memory_ids_list[i]
                 meta = dict(metadatas[i] or {})
 
-                # 记录本次检索到的记忆，以便成功样本也能追溯引用链路
+                # Record retrieved memories so that successful samples can also trace reference chains
                 if retrieved_ids:
                     meta["related_memory_ids"] = [
                         str(rid) for rid in retrieved_ids if rid
@@ -1743,13 +1744,14 @@ class MemoryService:
 
     def save_checkpoint_snapshot(self, target_ck_dir: str, ckpt_id: str) -> dict:
         """
-        保存当前 MemoryService 所指向的 MemCube 与向量库的独立快照到指定 ck 目录。
-        目录结构：
+        Save an independent snapshot of the current MemCube and vector store to the specified
+        checkpoint directory.
+        Directory structure:
         <ck_dir>/snapshot/
-            - cube/                # GeneralMemCube.dump 导出的 config.json + textual_memory.json
-            - qdrant/             # 直接拷贝当前 qdrant 本地目录（便于快速加载）
-            - snapshot_meta.json  # 元信息（含校验/统计）
-        返回：包含关键信息的字典，用于上层记录。
+            - cube/                # GeneralMemCube.dump export (config.json + textual_memory.json)
+            - qdrant/             # Direct copy of current qdrant local directory (for fast loading)
+            - snapshot_meta.json  # Meta information (with checksum/stats)
+        Returns: A dict with key info for upstream logging.
         """
         import os, json, shutil, hashlib
 
@@ -1758,18 +1760,18 @@ class MemoryService:
         cube_dst = os.path.join(snapshot_root, "cube")
         qdrant_dst = os.path.join(snapshot_root, "qdrant")
         os.makedirs(snapshot_root, exist_ok=True)
-        # 清理旧目录以保证原子性
+        # Clean old directories to ensure atomicity
         if os.path.isdir(cube_dst):
             shutil.rmtree(cube_dst)
         if os.path.isdir(qdrant_dst):
             shutil.rmtree(qdrant_dst)
-        # 1) dump cube 到全新目录（包含 textual_memory.json：完整向量与payload）
+        # 1) Dump cube to a fresh directory (includes textual_memory.json: full vectors and payload)
         cube_id = getattr(self, "default_cube_id", None)
         cube = self.mos.mem_cubes.get(cube_id) if cube_id else None
         if cube is None:
             raise RuntimeError("No active mem cube to snapshot.")
         cube.dump(cube_dst)
-        # 2) 拷贝 qdrant 文件目录（便于直接加载；如失败不影响最小可复现）
+        # 2) Copy qdrant file directory (for direct loading; failure does not affect minimum reproducibility)
         qdrant_src = getattr(self, "_qdrant_dir", None)
         qdrant_copied = False
         if qdrant_src and os.path.isdir(qdrant_src):
@@ -1789,7 +1791,7 @@ class MemoryService:
                     os.makedirs(qdrant_dst, exist_ok=True)
                 except Exception:
                     pass
-        # 3) 统计与校验
+        # 3) Stats and checksum
         textual_path = os.path.join(cube_dst, "textual_memory.json")
         md5 = None
         if os.path.isfile(textual_path):
@@ -1838,10 +1840,12 @@ class MemoryService:
         self, snapshot_root: str, *, mem_cube_id: str | None = None
     ) -> int:
         """
-        从 <ck_dir>/snapshot/ 加载快照并切换当前默认 cube，用于独立评测。
-        - 如果 snapshot_root 不包含 epoch number，自动查找最大的 epoch 并加载
-        - 优先读取 snapshot_meta.json；若缺失则按约定目录推断 cube/qdrant 路径。
-        - 使用 GeneralMemCube.init_from_dir + default_config 覆盖 vector_db.path 指向快照内 qdrant。
+        Load a snapshot from <ck_dir>/snapshot/ and switch the current default cube for
+        independent evaluation.
+        - If snapshot_root does not contain an epoch number, auto-find the latest epoch and load it
+        - Prefers reading snapshot_meta.json; if missing, infers cube/qdrant paths by convention.
+        - Uses GeneralMemCube.init_from_dir + default_config to override vector_db.path
+          pointing to the qdrant within the snapshot.
 
         Returns:
             int: The checkpoint_id (section/epoch number) from the loaded snapshot
@@ -1849,11 +1853,11 @@ class MemoryService:
         import os, json, re, shutil, sqlite3
         from memos.configs.mem_cube import GeneralMemCubeConfig
 
-        # 如果 snapshot_root 不是具体的 epoch 目录，则自动查找最大的 epoch
+        # If snapshot_root is not a specific epoch directory, auto-find the latest epoch
         if os.path.isdir(snapshot_root) and not os.path.isfile(
             os.path.join(snapshot_root, "snapshot_meta.json")
         ):
-            # 检查是否有子目录是数字（epoch number）
+            # Check if there are numeric subdirectories (epoch numbers)
             try:
                 epoch_dirs = []
                 for item in os.listdir(snapshot_root):
@@ -1870,7 +1874,7 @@ class MemoryService:
             except Exception as e:
                 logger.warning(f"Failed to auto-detect epoch directory: {e}")
 
-        # 解析路径
+        # Resolve paths
         meta_path = os.path.join(snapshot_root, "snapshot_meta.json")
         cube_dir = os.path.join(snapshot_root, "cube")
         qdrant_dir = os.path.join(snapshot_root, "qdrant")
@@ -1887,7 +1891,7 @@ class MemoryService:
                 pass
         if not os.path.isdir(cube_dir):
             raise ValueError(f"Snapshot cube directory not found: {cube_dir}")
-        # 构造 default_config 以覆盖向量库路径与基础 provider 配置
+        # Build default_config to override vector store path and base provider config
         chat = self.mos_config.chat_model
         openai_cfg = chat.config.model_dump()
         embedder = self.mos_config.mem_reader.config.embedder.config
@@ -1924,7 +1928,7 @@ class MemoryService:
             act_mem={"backend": "uninitialized", "config": {}},
             para_mem={"backend": "uninitialized", "config": {}},
         )
-        # 载入并注册
+        # Load and register
         # Ensure qdrant directory exists; QdrantLocal will create internal sqlite files.
         if not isinstance(qdrant_dir, str) or not qdrant_dir:
             qdrant_dir = os.path.join(snapshot_root, "qdrant")
@@ -1976,7 +1980,7 @@ class MemoryService:
                 raise
         target_id = mem_cube_id or f"cube_{self.user_id}_snapshot"
         old_cube_id = getattr(self, "default_cube_id", None)
-        # register_mem_cube 如果目标 ID 已存在会直接跳过，因此需要在加载快照时显式替换掉旧的 cube
+        # register_mem_cube skips if target ID already exists, so we must explicitly replace the old cube when loading a snapshot
         existing_cubes = getattr(self.mos, "mem_cubes", {})
         if target_id in existing_cubes:
             try:

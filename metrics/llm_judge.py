@@ -195,17 +195,17 @@ class LLMJudge:
         metadata_info = ""
         if metadata:
             if "inference_type" in metadata:
-                metadata_info += f"\n推理类型: {metadata['inference_type']}"
+                metadata_info += f"\nInference type: {metadata['inference_type']}"
             if "trap_design" in metadata:
                 trap = metadata["trap_design"]
                 if "trap_mechanism" in trap:
-                    metadata_info += f"\n陷阱机制: {trap['trap_mechanism']}"
+                    metadata_info += f"\nTrap mechanism: {trap['trap_mechanism']}"
                 if "required_patient_info" in trap:
-                    metadata_info += f"\n需要的患者信息: {', '.join(trap['required_patient_info'])}"
+                    metadata_info += f"\nRequired patient info: {', '.join(trap['required_patient_info'])}"
             if "common_wrong_answer" in metadata:
                 wrong = metadata["common_wrong_answer"]
-                metadata_info += f"\n常见错误答案: {wrong.get('content', '')}"
-                metadata_info += f"\n错误原因: {wrong.get('why_wrong', '')}"
+                metadata_info += f"\nCommon wrong answer: {wrong.get('content', '')}"
+                metadata_info += f"\nError reason: {wrong.get('why_wrong', '')}"
 
         prompt = self._prompt_manager.format_judge(
             query_type="inference_generation",
@@ -259,7 +259,7 @@ class LLMJudge:
 
         nodes_for_validation = ""
         if reasoning_chain:
-            nodes_for_validation = "\n【推理链节点（需逐一验证）】\n"
+            nodes_for_validation = "\n[Reasoning chain nodes (to be verified one by one)]\n"
             for i, node in enumerate(reasoning_chain):
                 node_id = node.get("node_id", i + 1)
                 session_id = node.get("session_id", "?")
@@ -268,15 +268,15 @@ class LLMJudge:
                 source_info = node.get("source_info", "")
 
                 nodes_for_validation += f"""
-节点{node_id}:
-  - 来源: Session {session_id} ({source_info})
-  - 角色: {role}
-  - 内容: {content}
+Node {node_id}:
+  - Source: Session {session_id} ({source_info})
+  - Role: {role}
+  - Content: {content}
 """
 
         required_nodes_str = ""
         if required_memory_nodes:
-            required_nodes_str = "\n【必须从记忆中召回的信息】\n"
+            required_nodes_str = "\n[Information that must be recalled from memory]\n"
             for node in required_memory_nodes:
                 required_nodes_str += f"- {node}\n"
 
