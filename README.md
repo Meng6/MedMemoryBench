@@ -4,183 +4,240 @@
 
 **MedMemoryBench** is a benchmark framework for evaluating Agent memory methods, with a focus on memory capability assessment in medical dialogue scenarios. This framework provides unified evaluation interfaces, multiple baseline method implementations, and a flexible configuration management system, while also supporting the import and evaluation of other datasets.
 
+## 📊 Dataset Overview
+
+MedMemoryBench ships a Chinese medical dialogue dataset (with a parallel English version) generated around long-horizon patient personas:
+
+- **20 personas**, each containing a longitudinal background, life events, and trap events
+- **~2,020 dialogue sessions** in total (≈101 per persona), simulating multi-session doctor–patient interactions
+- **~1,986 evaluation queries** spanning 6 query types:
+  - `entity_exact_match` (400) — factual recall
+  - `temporal_localization` (400) — time-related reasoning
+  - `multiple_choice` (398) — multi-choice QA
+  - `inference_generation` (397) — open-ended inference
+  - `state_update` (200) — tracking evolving patient states
+  - `multi_hop_clinical_deduction` (191) — multi-hop clinical reasoning
+- **Size on disk**: ~598 MB (`data/MedMemoryBench/`, Chinese) + ~443 MB (`data/MedMemoryBench_EN/`, English)
+- A bundled [LoCoMo](https://github.com/snap-research/locomo) copy (~18 MB) is provided under `data/locomo/` for cross-benchmark comparison.
+
 ## 📁 Project Structure
 
 ```
 MedMemoryBench/
-├── main.py                    # Evaluation entry point
-├── requirements.txt           # Dependencies
-├── .env                       # Environment variables (API Keys, etc.)
+├── main.py                       # Evaluation entry point
+├── requirements.txt              # Python dependencies
+├── LICENSE                       # Apache License 2.0
+├── LEGAL.md                      # Comment-language legal notice
+├── .env.example                  # Environment variable template
 │
-├── configs/                   # Configuration files
-│   ├── method_config/         # Method configurations
-│   │   ├── long_context_gpt-5.1-chat.yaml
-│   │   ├── embedding_rag_gpt-5.1-chat.yaml
-│   │   ├── bm25_rag_gpt-5.1-chat.yaml
-│   │   ├── mem0_gpt-5.1-chat.yaml
-│   │   ├── zep_gpt-5.1-chat.yaml
-│   │   └── graph_rag_gpt-5.1-chat.yaml
-│   └── dataset_config/        # Dataset configurations
+├── configs/                      # Configuration files
+│   ├── method_config/            # Per-method YAML configs (gpt-5.1 / qwen3 variants)
+│   │   ├── long_context_gpt-5.1.yaml
+│   │   ├── embedding_rag_gpt-5.1.yaml
+│   │   ├── bm25_rag_gpt-5.1.yaml
+│   │   ├── graph_rag_gpt-5.1.yaml
+│   │   ├── mem0_gpt-5.1.yaml
+│   │   ├── memos_gpt-5.1.yaml
+│   │   ├── memrl_gpt-5.1.yaml
+│   │   ├── mem1_gpt-5.1.yaml
+│   │   ├── amem_gpt-5.1.yaml
+│   │   ├── hipporag_gpt-5.1.yaml
+│   │   ├── lightmem_gpt-5.1.yaml
+│   │   ├── letta_gpt-5.1.yaml
+│   │   ├── mirix_gpt-5.1.yaml
+│   │   ├── remem_gpt-5.1.yaml
+│   │   └── zep_gpt-5.1-chat.yaml
+│   └── dataset_config/           # Dataset configurations
 │       ├── medmemorybench.yaml
 │       └── locomo.yaml
 │
-├── methods/                   # Memory method implementations
-│   ├── README.md             # Method extension guide
-│   ├── base.py               # BaseAgent base class
-│   ├── long_context.py       # Long Context method
-│   ├── embedding_rag.py      # Embedding RAG method
-│   ├── bm25_rag.py           # BM25 RAG method
-│   ├── mem0_agent.py         # Mem0 Agent
-│   ├── zep_agent.py          # Zep Agent
-│   └── graph_rag_agent.py    # GraphRAG Agent
+├── methods/                      # Memory method implementations
+│   ├── base.py                   # BaseAgent abstract class
+│   ├── long_context.py           # Long-context baseline
+│   ├── embedding_rag.py          # Dense embedding RAG
+│   ├── bm25_rag.py               # BM25 sparse RAG
+│   ├── graph_rag.py              # Graph-based RAG
+│   ├── self_rag.py               # Self-RAG
+│   ├── mem0_agent.py             # Mem0 adapter
+│   ├── memos_agent.py            # MemOS adapter
+│   ├── memrl_agent.py            # MemRL adapter
+│   ├── amem_agent.py             # A-MEM adapter
+│   ├── hipporag_agent.py         # HippoRAG adapter
+│   ├── lightmem_agent.py         # LightMem adapter
+│   ├── letta_agent.py            # Letta adapter
+│   ├── mirix_agent.py            # MIRIX adapter
+│   ├── remem_agent.py            # ReMem adapter
+│   ├── zep_agent.py              # Zep Cloud adapter
+│   └── <vendored upstream repos> # mem0/, memOS/, MemRL/, amem/, HippoRAG/,
+│                                 # LightMem/, letta/, MIRIX/, REMem/, MEM1/,
+│                                 # cognee/, memorag/  (third-party sources)
 │
-├── benchmarks/                # Dataset evaluation implementations
-│   ├── base.py               # BaseDataset base class
-│   └── medmemorybench/       # MedMemoryBench dataset
-│       ├── dataset.py        # Data loading
-│       ├── evaluator.py      # Evaluation logic
-│       └── checkpoint.py     # Checkpoint resumption
+├── benchmarks/                   # Dataset evaluation implementations
+│   ├── base.py                   # BaseDataset abstract class
+│   ├── medmemorybench/           # MedMemoryBench dataset
+│   │   ├── dataset.py            # Data loading
+│   │   ├── evaluator.py          # Evaluation logic
+│   │   └── checkpoint.py         # Checkpoint resumption
+│   └── locomo/                   # LoCoMo dataset
+│       ├── dataset.py
+│       └── evaluator.py
 │
-├── metrics/                   # Evaluation metrics
-│   ├── base.py               # BaseMetric base class
-│   ├── string_match.py       # String matching metrics
-│   └── llm_judge.py          # LLM Judge metrics
+├── metrics/                      # Evaluation metrics
+│   ├── base.py                   # BaseMetric abstract class
+│   ├── string_match.py           # String matching metrics
+│   ├── llm_judge.py              # LLM-as-a-Judge metrics
+│   └── locomo_metrics.py         # LoCoMo-specific metrics
 │
-├── src/                       # Core modules
-│   ├── config.py             # Configuration loader
-│   ├── agent.py              # AgentManager
-│   ├── evaluator.py          # Evaluation dispatcher
-│   └── result.py             # Result collection and reporting
+├── src/                          # Core orchestration modules
+│   ├── config.py                 # Configuration loader
+│   ├── agent.py                  # AgentManager
+│   ├── evaluator.py              # Evaluation dispatcher
+│   └── result.py                 # Result collection and reporting
 │
-├── utils/                     # Utility modules
-│   ├── llm_client.py         # LLM client
-│   ├── templates.py          # Prompt templates
-│   ├── tokenizer.py          # Tokenizer
-│   └── logger.py             # Logger
+├── utils/                        # Utility modules
+│   ├── llm_client.py             # Unified LLM client
+│   ├── tokenizer.py              # Tokenizer helpers
+│   ├── templates.py              # Prompt templates
+│   ├── prompts_qa.py             # QA prompts
+│   ├── prompts_judge.py          # Judge prompts
+│   ├── prompts_memorize.py       # Memorization prompts
+│   ├── langchain_callback.py     # LangChain callback hooks
+│   └── logger.py                 # Logger
 │
-├── scripts/                   # Scripts
-│   └── run_eval.sh           # Evaluation run script
+├── docker/                       # Optional service compose files
+│   ├── mirix-init.sql
+│   └── mirix-services.yml
 │
-├── data/                      # Data directory
-│   └── MedMemoryBench/       # MedMemoryBench dataset
+├── scripts/                      # Helper scripts
+│   ├── run_eval.sh               # Evaluation entry script
+│   └── mirix-services.sh         # MIRIX service launcher
 │
-└── outputs/                   # Evaluation results output
+├── data/                         # Datasets (Git LFS)
+│   ├── MedMemoryBench/           # Chinese version, ~598 MB
+│   ├── MedMemoryBench_EN/        # English version, ~443 MB
+│   └── locomo/                   # LoCoMo dataset, ~18 MB
+│
+├── generation/                   # Dataset generation pipeline (separate sub-project)
+├── outputs/                      # Evaluation outputs (gitignored)
+├── exp_results/                  # Curated experiment reports
+├── logs/                         # Runtime logs (gitignored)
+└── results/                      # Method-side caches, e.g. Qdrant / mem cubes (gitignored)
 ```
 
 ## 🚀 Quick Start
 
-### 1. Environment Setup
+### 1. Clone the Repository
 
-**Clone with Git LFS:**
+This repository ships datasets via Git LFS.
+
 ```bash
-# Install Git LFS (if not already installed)
-# macOS
-brew install git-lfs
-# Ubuntu/Debian
-sudo apt-get install git-lfs
-# Windows
-# Download from https://git-lfs.github.com/
+# Install Git LFS (skip if already installed)
+brew install git-lfs                  # macOS
+sudo apt-get install git-lfs          # Ubuntu/Debian
+# Windows: https://git-lfs.github.com/
 
-# Initialize Git LFS
 git lfs install
-
-git clone <repository-url>
+git clone https://github.com/AQ-MedAI/MedMemoryBench.git
+cd MedMemoryBench
 ```
 
-**Using uv (Recommended):**
+### 2. Environment Setup
+
+**Using uv (recommended):**
+
 ```bash
-# Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Create virtual environment and install dependencies
 uv venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
+source .venv/bin/activate          # Linux/macOS
+# .venv\Scripts\activate           # Windows
 
 uv pip install -r requirements.txt
 ```
 
 **Using conda:**
+
 ```bash
-# Create conda environment
 conda create -n medmemorybench python=3.10
 conda activate medmemorybench
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-**2. Method-Specific Setup**
+**Method-specific dependencies:** several memory methods vendor upstream packages under `methods/` (e.g. `methods/mem0/`, `methods/memOS/`). If a method has its own `requirements.txt` or `README`, follow those instructions to enable it.
 
-Some memory methods include their own packages and require additional installation. Refer to the respective method's README for setup instructions.
-
-**Embedding models:** Method configs reference local embedding models under `models/` (e.g., `models/bge-small-zh-v1.5`). Download them before running:
+**Embedding models:** method configs reference local embedding models under `models/` (e.g. `models/bge-small-zh-v1.5`). Download them before running:
 
 ```bash
 python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-zh-v1.5').save('models/bge-small-zh-v1.5')"
 ```
 
-You can also set the `MODELS_DIR` environment variable to point to a custom models directory.
+You can also set `MODELS_DIR` to point to a custom models directory.
 
 ### 3. Configure Environment Variables
-
-Copy and edit the `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure API Keys:
+Edit `.env` and fill in the API keys you intend to use:
 
 ```env
-# BigModel (OpenAI-compatible, recommended for this project)
+# BigModel (OpenAI-compatible, primary endpoint used in this project)
 BIGMODEL_API_KEY=your_bigmodel_api_key
 BIGMODEL_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 
-# OpenAI API
+# OpenAI (optional, if you use OpenAI directly)
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_BASE_URL=https://api.openai.com/v1
 
-# (Optional) Azure OpenAI
+# Azure OpenAI (optional)
 AZURE_OPENAI_API_KEY=your_azure_key
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
 
-# (Optional) Zep Cloud
+# Zep Cloud (optional, only needed for the Zep agent)
 ZEP_API_KEY=your_zep_api_key
 
-# Default model configuration
+# Default model selection
 DEFAULT_LLM_MODEL=gpt-4o-mini
 DEFAULT_EMBEDDING_MODEL=text-embedding-3-small
 EMBEDDING_PROVIDER=openai
 
-# (Optional) isolate Letta local runtime data
-# If unset, Letta may use ~/.letta
+# Optional: isolate Letta local runtime data (defaults to ~/.letta)
 LETTA_DIR=.tmp/letta_runtime
 ```
 
 Notes:
-- For Letta with BigModel, set `BIGMODEL_API_KEY` / `BIGMODEL_BASE_URL` first. The framework will map them to OpenAI-compatible settings internally.
-- `OPENAI_API_KEY` can still be kept for other methods, but Letta auth should be validated against the effective runtime key.
-- `LETTA_DIR` is recommended to avoid stale local SQLite metadata from previous Letta runs.
+- For Letta with BigModel, set `BIGMODEL_API_KEY` / `BIGMODEL_BASE_URL` first; the framework maps them to OpenAI-compatible settings internally.
+- `LETTA_DIR` is recommended to avoid stale local SQLite metadata from previous runs.
 
 ### 4. Run Evaluation
 
-**Using script:**
+**Via shell script:**
+
 ```bash
-./scripts/run_eval.sh bm25_rag_gpt-5.1-chat medmemorybench
+./scripts/run_eval.sh bm25_rag_gpt-5.1 medmemorybench
 ```
 
-**Using Python:**
-```bash
-python main.py -m bm25_rag_gpt-5.1-chat -d medmemorybench
+**Via Python:**
 
-# Dry Run mode (no actual API calls)
-python main.py -m embedding_rag_gpt-5.1-chat -d medmemorybench --dry-run
+```bash
+# Standard run
+python main.py -m bm25_rag_gpt-5.1 -d medmemorybench
+
+# Dry run (no real LLM/API calls)
+python main.py -m embedding_rag_gpt-5.1 -d medmemorybench --dry-run
+
+# Resume from checkpoint
+python main.py -m embedding_rag_gpt-5.1 -d medmemorybench --resume
+
+# List available methods / datasets
+python main.py --list-methods
+python main.py --list-datasets
 ```
 
-> 💡 **Adding a new method?** See [methods/README.md](methods/README.md) for how to extend new memory methods.
+> 💡 **Adding a new method?** See [methods/README.md](methods/README.md) for how to extend the framework with new memory methods.
 
-## Troubleshooting (Letta + BigModel)
+## 🧰 Troubleshooting (Letta + BigModel)
 
 ### Symptom: `curl` works, but Letta reports `401` / `forbidden`
 
@@ -202,7 +259,7 @@ If this passes, your key is valid and Letta should authenticate correctly.
 
 ### Symptom: Letta fails with SQLite schema / migration errors
 
-Cause: Letta default local DB (`~/.letta/sqlite.db`) contains old schema state.
+Cause: Letta's default local DB (`~/.letta/sqlite.db`) contains old schema state.
 
 Fix:
 - Set `LETTA_DIR` to an isolated project-local path, e.g. `.tmp/letta_runtime`.
@@ -210,7 +267,7 @@ Fix:
 
 ### Symptom: intermittent timeout / handshake timeout
 
-This usually indicates transient network/proxy/TLS instability, not invalid API key.
+This usually indicates transient network/proxy/TLS instability rather than an invalid API key.
 
 Suggested actions:
 - Retry the same command in a quiet period (avoid parallel test runs).
@@ -218,40 +275,32 @@ Suggested actions:
 
 ## 🔧 Configuration
 
-### Method Configuration (method_config)
-
-Each method configuration file is located in `configs/method_config/`:
+### Method Configuration (`configs/method_config/`)
 
 ```yaml
-# configs/method_config/embedding_rag_gpt-5.1-chat.yaml
+# configs/method_config/embedding_rag_gpt-5.1.yaml
 
-# Method basic information
 method_name: "embedding_rag"
-method_type: "rag"  # baseline / rag / agentic_memory
-description: "Embedding RAG Agent - Vector retrieval based RAG method"
+method_type: "rag"                  # baseline / rag / agentic_memory
+description: "Embedding RAG Agent - Dense vector retrieval based RAG method"
 
-# Model configuration
 model:
   provider: "openai"
-  name: "gpt-5.1-chat"
-  temperature: 1.0
+  name: "gpt-5.1"
+  temperature: 0.3
   max_completion_tokens: 100000
 
-# Method hyperparameters
 agent_params:
-  top_k: 5              # Number of documents to retrieve
-  chunk_size: 512       # Text chunk size
-  chunk_overlap: 50     # Chunk overlap size
+  top_k: 5                          # Number of documents to retrieve
+  chunk_size: 512                   # Text chunk size
+  chunk_overlap: 50                 # Chunk overlap
 
-# Embedding configuration (optional)
 embedding:
-  provider: "local"     # openai / local / huggingface
+  provider: "local"                 # openai / local / huggingface
   model: "/path/to/local/model"
 ```
 
-### Dataset Configuration (dataset_config)
-
-Dataset configuration files are located in `configs/dataset_config/`:
+### Dataset Configuration (`configs/dataset_config/`)
 
 ```yaml
 # configs/dataset_config/medmemorybench.yaml
@@ -266,8 +315,8 @@ data:
   queries_pattern: "persona_{id}/eval/generated_queries.json"
 
 evaluation:
-  mode: "independent"       # independent / merged
-  evaluation_interval: 10   # Evaluate every N sessions
+  mode: "independent"               # independent / merged
+  evaluation_interval: 10           # Evaluate every N sessions
 
 query_types:
   - name: "entity_exact_match"
@@ -279,12 +328,19 @@ query_types:
 
 ## 📄 Output
 
-Evaluation results are saved in `outputs/<method>_<model>/`:
+Evaluation results are saved under `outputs/<method>_<model>/`:
 
 ```
 outputs/
-└── bm25_rag_gpt-5.1-chat/
-    ├── eval_medmemorybench_20260330_181703.json    # Detailed evaluation results (JSON)
-    ├── report_medmemorybench_20260330_181703.txt   # Human-readable report (text)
+└── bm25_rag_gpt-5.1/
+    ├── eval_medmemorybench_20260330_181703.json    # Detailed results (JSON)
+    ├── report_medmemorybench_20260330_181703.txt   # Human-readable report
     └── memory_builds_20260330_181703.json          # Memory build logs
 ```
+
+## 📜 License
+
+- **Code** in this repository is released under the [Apache License 2.0](LICENSE).
+- **Datasets** under `data/MedMemoryBench/` and `data/MedMemoryBench_EN/` are released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Vendored third-party method sources under `methods/` retain their original upstream licenses where present.
+- See [LEGAL.md](LEGAL.md) for the source-comment language clause.
