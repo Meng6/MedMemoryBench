@@ -1,14 +1,4 @@
-"""MemRL Agent - Value-driven procedural memory with Q-learning based retrieval.
-
-This implementation uses MemRL's official components:
-- MemoryService: Core memory management with Build/Retrieve/Update strategies
-- ValueAwareSelector: Q-value based memory selection with ε-greedy exploration
-- LocalEmbedder: Embedding provider
-
-Token tracking is achieved by implementing a custom LLM provider that wraps
-MedMemoryBench's llm_client, ensuring accurate token statistics from actual
-API responses.
-"""
+"""MemRL Agent - Value-driven procedural memory with Q-learning based retrieval."""
 
 from __future__ import annotations
 
@@ -34,11 +24,6 @@ from utils.llm_client import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# Tracked LLM Provider for MemRL
-# =============================================================================
 
 class TrackedLLMProvider:
     """LLM provider that wraps MedMemoryBench's llm_client for accurate token tracking.
@@ -178,11 +163,6 @@ High-level script:"""
         self._total_output_tokens = 0
         self._total_latency = 0.0
 
-
-# =============================================================================
-# Memory Build Progress Tracker
-# =============================================================================
-
 @dataclass
 class MemoryBuildProgress:
     """Tracks memory building progress and statistics."""
@@ -260,11 +240,6 @@ class MemoryBuildProgress:
             "avg_chunk_time": round(sum(self.chunk_timings) / len(self.chunk_timings), 3) if self.chunk_timings else 0,
             "build_logs": self.build_logs,
         }
-
-
-# =============================================================================
-# MemRL Agent Implementation
-# =============================================================================
 
 class MemRLAgent(BaseAgent):
     """MemRL Agent with value-driven procedural memory.

@@ -1,20 +1,4 @@
-"""MIRIX Agent - Multi-agent memory system with six-component memory architecture.
-
-This module provides the MIRIXAgent class for MedMemoryBench evaluation,
-wrapping MIRIX's LocalClient with token tracking and synchronous interface.
-
-MIRIX provides a six-component memory system:
-- Core Memory: Essential persona and human blocks
-- Episodic Memory: Event/conversation memories with timestamps
-- Semantic Memory: Concept/fact knowledge
-- Procedural Memory: Step/procedure memories
-- Resource Memory: Resource/file memories
-- Knowledge Vault: Sensitive information storage
-
-Token tracking is achieved through:
-1. MirixUsageStatistics from MirixResponse for both memory and query phases
-2. utils/llm_client for fallback query phase (if not using native MIRIX query)
-"""
+"""MIRIX Agent - Multi-agent memory system with six-component memory architecture."""
 
 import asyncio
 import gc
@@ -793,7 +777,7 @@ class MIRIXAgent(BaseAgent):
             output=response_content,
             query_time=query_time,
             retrieved_count=len(retrieved_memories),
-            retrieved_memories=retrieved_memories[:5],  # 正确设置字段，限制数量以控制日志大小
+            retrieved_memories=retrieved_memories[:5],  # Properly set field, limit count for log size
             extra={
                 "method": "mirix_native",
                 "embedding_model": self.embedding_model,
@@ -872,7 +856,7 @@ class MIRIXAgent(BaseAgent):
 
         query_time = time.time() - start_time
 
-        # 构建 retrieved_memories 格式（用于评测框架）
+        # Build retrieved_memories format for evaluation framework
         formatted_memories = [
             {
                 "memory": m["memory"][:500],
@@ -885,7 +869,7 @@ class MIRIXAgent(BaseAgent):
             output=response.content,
             query_time=query_time,
             retrieved_count=len(retrieved_memories),
-            retrieved_memories=formatted_memories,  # 正确设置字段
+            retrieved_memories=formatted_memories,  # Properly set field
             extra={
                 "method": "mirix_manual",
                 "embedding_model": self.embedding_model,

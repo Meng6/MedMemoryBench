@@ -1,8 +1,4 @@
-"""A-Mem agent adapter for MedMemoryBench.
-
-This adapter bridges the A-Mem (Agentic Memory) system to the BaseAgent interface.
-It follows the official A-Mem implementation without additional preprocessing steps.
-"""
+"""A-Mem agent adapter for MedMemoryBench."""
 
 from __future__ import annotations
 

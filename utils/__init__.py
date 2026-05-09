@@ -1,8 +1,4 @@
-"""
-Utils 模块
-
-提供各类工具函数
-"""
+"""Utils module."""
 
 from .logger import setup_logger, get_logger, get_eval_logger
 from .llm_client import (

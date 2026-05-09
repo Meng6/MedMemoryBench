@@ -322,8 +322,6 @@ class MedMemoryBenchEvaluator:
                     timestamp=None,
                 )
 
-                # 关键：告诉 Agent 这是否是当前 evaluation unit 的最后一个 session
-                # 这样 Agent 可以在最后一个 session 时触发图构建
                 is_last_session = (idx == total_sessions - 1)
 
                 try:
@@ -331,7 +329,7 @@ class MedMemoryBenchEvaluator:
                         message=formatted_text,
                         memorizing=True,
                         context_id=unit.context_id,
-                        is_last_session=is_last_session,  # 新增参数
+                        is_last_session=is_last_session,
                     )
 
                     if memory_result is not None and isinstance(memory_result, MemoryBuildResult):

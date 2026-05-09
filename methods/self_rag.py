@@ -20,30 +20,22 @@ load_dotenv()
 
 
 def _get_embeddings(embedding_model: str = None):
-    """
-    创建 Embeddings 实例，支持 OpenAI API 和本地 HuggingFace 模型。
-
-    Args:
-        embedding_model: 可选的 embedding 模型名称或本地路径
-
-    Returns:
-        Embeddings 实例（OpenAIEmbeddings 或 HuggingFaceEmbeddings）
-    """
+    """Create an Embeddings instance (OpenAI API or local HuggingFace model)."""
     provider = os.environ.get("EMBEDDING_PROVIDER", "openai")
     model_name = embedding_model or os.environ.get("DEFAULT_EMBEDDING_MODEL")
 
     if provider in ("local", "huggingface"):
-        # 使用本地 HuggingFace 模型
+        # Use local HuggingFace model
         try:
             from langchain_community.embeddings import HuggingFaceEmbeddings
-            print(f"[SelfRAG] 使用本地 HuggingFace Embedding 模型: {model_name}")
+            print(f"[SelfRAG] Using local HuggingFace embedding model: {model_name}")
             return HuggingFaceEmbeddings(
                 model_name=model_name,
                 model_kwargs={'device': 'cpu'},
                 encode_kwargs={'normalize_embeddings': True}
             )
         except ImportError:
-            print("[SelfRAG] 警告: langchain_community 未安装 HuggingFaceEmbeddings，回退到 OpenAI")
+            print("[SelfRAG] Warning: HuggingFaceEmbeddings not available, falling back to OpenAI")
             provider = "openai"
 
     base_url = os.environ.get("OPENAI_BASE_URL")
@@ -61,12 +53,12 @@ def _get_embeddings(embedding_model: str = None):
 
 
 def _get_openai_embeddings(embedding_model: str = None):
-    """向后兼容的别名函数"""
+    """Backward-compatible alias."""
     return _get_embeddings(embedding_model)
 
 
 def _get_chat_openai(model_name: str = "gpt-4o-mini", temperature: float = 0.7, max_tokens: int = 1000):
-    """创建支持自定义 base_url 的 ChatOpenAI 实例。"""
+    """Create a ChatOpenAI instance with custom base_url support."""
     base_url = os.environ.get("OPENAI_BASE_URL")
     api_key = os.environ.get("OPENAI_API_KEY")
 

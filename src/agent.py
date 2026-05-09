@@ -442,8 +442,7 @@ class AgentManager:
         message: str,
         memorizing: bool = False,
         context_id: Optional[int] = None,
-        is_last_session: bool = False,  # 新增：标记是否是当前 evaluation unit 的最后一个 session
-        **kwargs
+        is_last_session: bool = False, 
     ) -> Any:
         if context_id is not None and context_id != self._context_id:
             self._context_id = context_id
@@ -506,7 +505,7 @@ class AgentManager:
             "output": response.output,
             "query_time": query_time,
             "retrieved_count": response.retrieved_count,
-            "retrieved_memories": response.retrieved_memories,  # 修复：直接使用 AgentResponse 的字段
+            "retrieved_memories": response.retrieved_memories, 
         }
 
     def reset(self) -> None:

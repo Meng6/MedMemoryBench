@@ -1,35 +1,17 @@
 #!/bin/bash
-# ============================================================================
-# MIRIX Services Management Script for MedMemoryBench
-# ============================================================================
-# This script helps manage the PostgreSQL and Redis services required by MIRIX.
-#
-# Usage:
-#   ./scripts/mirix-services.sh start       # Start services (PostgreSQL only)
-#   ./scripts/mirix-services.sh start-all   # Start services (PostgreSQL + Redis)
-#   ./scripts/mirix-services.sh stop        # Stop services
-#   ./scripts/mirix-services.sh status      # Check service status
-#   ./scripts/mirix-services.sh logs        # View logs
-#   ./scripts/mirix-services.sh reset       # Reset all data (destructive!)
-#   ./scripts/mirix-services.sh test        # Test database connection
-# ============================================================================
-
 set -e
 
-# Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$PROJECT_ROOT/docker/mirix-services.yml"
 ENV_FILE="$PROJECT_ROOT/.env"
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Helper functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -46,7 +28,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if Docker is running
 check_docker() {
     if ! docker info > /dev/null 2>&1; then
         log_error "Docker is not running. Please start Docker first."
@@ -54,7 +35,6 @@ check_docker() {
     fi
 }
 
-# Check if docker-compose or docker compose is available
 get_compose_cmd() {
     if command -v docker-compose &> /dev/null; then
         echo "docker-compose"
@@ -66,7 +46,6 @@ get_compose_cmd() {
     fi
 }
 
-# Start services (PostgreSQL only)
 start_services() {
     check_docker
     local compose_cmd=$(get_compose_cmd)
@@ -86,7 +65,6 @@ start_services() {
     log_info "Connection: postgresql://mirix:mirix@localhost:5432/mirix"
 }
 
-# Start all services (PostgreSQL + Redis)
 start_all_services() {
     check_docker
     local compose_cmd=$(get_compose_cmd)
@@ -108,7 +86,6 @@ start_all_services() {
     log_info "Redis: redis://localhost:6379"
 }
 
-# Stop services
 stop_services() {
     check_docker
     local compose_cmd=$(get_compose_cmd)
@@ -118,7 +95,6 @@ stop_services() {
     log_success "MIRIX services stopped."
 }
 
-# Check service status
 check_status() {
     check_docker
     local compose_cmd=$(get_compose_cmd)
@@ -129,11 +105,9 @@ check_status() {
     echo "============================================"
     echo ""
 
-    # PostgreSQL status
     if docker ps --format '{{.Names}}' | grep -q '^mirix_pgvector$'; then
         log_success "PostgreSQL (mirix_pgvector): Running"
 
-        # Check if database is accepting connections
         if docker exec mirix_pgvector pg_isready -U mirix -d mirix > /dev/null 2>&1; then
             log_success "  - Database is accepting connections"
         else
@@ -143,11 +117,9 @@ check_status() {
         log_warning "PostgreSQL (mirix_pgvector): Not running"
     fi
 
-    # Redis status
     if docker ps --format '{{.Names}}' | grep -q '^mirix_redis$'; then
         log_success "Redis (mirix_redis): Running"
 
-        # Check if Redis is accepting connections
         if docker exec mirix_redis redis-cli ping > /dev/null 2>&1; then
             log_success "  - Redis is accepting connections"
         else
@@ -161,7 +133,6 @@ check_status() {
     echo "============================================"
 }
 
-# View logs
 view_logs() {
     check_docker
     local compose_cmd=$(get_compose_cmd)
@@ -170,7 +141,6 @@ view_logs() {
     $compose_cmd -f "$COMPOSE_FILE" --profile with-redis logs -f
 }
 
-# Reset all data
 reset_data() {
     check_docker
     local compose_cmd=$(get_compose_cmd)
@@ -187,7 +157,6 @@ reset_data() {
     fi
 }
 
-# Wait for PostgreSQL to be ready
 wait_for_postgres() {
     local max_attempts=30
     local attempt=1
@@ -206,12 +175,10 @@ wait_for_postgres() {
     return 1
 }
 
-# Wait for Redis to be ready
 wait_for_redis() {
     local max_attempts=15
     local attempt=1
 
-    # Check if Redis container exists
     if ! docker ps --format '{{.Names}}' | grep -q '^mirix_redis$'; then
         return 0  # Redis not started, skip waiting
     fi
@@ -230,7 +197,6 @@ wait_for_redis() {
     return 1
 }
 
-# Test database connection
 test_connection() {
     check_docker
 
@@ -241,7 +207,6 @@ test_connection() {
         exit 1
     fi
 
-    # Test basic connection
     if docker exec mirix_pgvector psql -U mirix -d mirix -c "SELECT 1;" > /dev/null 2>&1; then
         log_success "PostgreSQL connection successful!"
     else
@@ -249,7 +214,6 @@ test_connection() {
         exit 1
     fi
 
-    # Test pgvector extension
     log_info "Testing pgvector extension..."
     local pgvector_test=$(docker exec mirix_pgvector psql -U mirix -d mirix -t -c "SELECT extversion FROM pg_extension WHERE extname = 'vector';" 2>/dev/null | tr -d ' ')
 
@@ -260,7 +224,6 @@ test_connection() {
         exit 1
     fi
 
-    # Test vector operations
     log_info "Testing vector operations..."
     docker exec mirix_pgvector psql -U mirix -d mirix -c "
         CREATE TEMP TABLE test_vectors (id serial PRIMARY KEY, embedding vector(3));
@@ -276,7 +239,6 @@ test_connection() {
         exit 1
     fi
 
-    # Test Redis if running
     if docker ps --format '{{.Names}}' | grep -q '^mirix_redis$'; then
         log_info "Testing Redis connection..."
         if docker exec mirix_redis redis-cli ping > /dev/null 2>&1; then
@@ -290,7 +252,6 @@ test_connection() {
     log_success "All tests passed! MIRIX services are ready for evaluation."
 }
 
-# Show usage
 show_usage() {
     echo ""
     echo "============================================"
@@ -317,7 +278,6 @@ show_usage() {
     echo ""
 }
 
-# Main command handler
 case "${1:-help}" in
     start)
         start_services

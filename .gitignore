@@ -10,7 +10,17 @@
 !.env.example
 
 # Generation pipeline
-/generation/*
+/generation/.serena
+/generation/.spec-workflow
+/generation/.venv
+/generation/.venv_verify
+/generation/dataset
+/generation/outputs
+/generation/logs
+/generation/pycache
+/generation/uv.lock
+/generation/pyproject.toml
+!/generation/.env.example
 
 # Python
 __pycache__/

@@ -1,10 +1,4 @@
-"""GraphRAG - Knowledge Graph based Retrieval-Augmented Generation.
-
-This module implements a GraphRAG system that:
-1. Builds a knowledge graph from documents using concept extraction
-2. Uses graph traversal for context expansion during queries
-3. Supports batch processing for efficient graph construction
-"""
+"""GraphRAG - Knowledge Graph based Retrieval-Augmented Generation."""
 
 import os
 import sys
@@ -45,23 +39,16 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-# Download NLTK data quietly
 nltk.download('punkt', quiet=True)
 nltk.download('wordnet', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
-# Constants
 DEFAULT_CHUNK_SIZE = 4096
 DEFAULT_CHUNK_OVERLAP = 200
 DEFAULT_EDGES_THRESHOLD = 0.8
 DEFAULT_RETRIEVE_NUM = 5
 DEFAULT_MAX_WORKERS = 3
 LLM_CONTEXT_LIMIT = 127000
-
-
-# ============================================================================
-# Embedding Helpers
-# ============================================================================
 
 def _get_embeddings(embedding_model: str = None):
     """Create Embeddings instance supporting OpenAI API and local HuggingFace models."""
@@ -100,7 +87,6 @@ def _get_chat_model(model_name: str, temperature: float = 0.7, max_tokens: int =
     """Create Chat model instance with provider auto-detection."""
     model_lower = model_name.lower()
 
-    # Detect Gemini models
     if 'gemini' in model_lower:
         return ChatGoogleGenerativeAI(
             temperature=temperature,
@@ -109,7 +95,6 @@ def _get_chat_model(model_name: str, temperature: float = 0.7, max_tokens: int =
             callbacks=callbacks,
         )
 
-    # OpenAI or compatible API
     base_url = os.environ.get("OPENAI_BASE_URL")
     api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -128,10 +113,6 @@ def _get_chat_model(model_name: str, temperature: float = 0.7, max_tokens: int =
     return ChatOpenAI(**kwargs)
 
 
-# ============================================================================
-# Pydantic Models for Structured Output
-# ============================================================================
-
 class Concepts(BaseModel):
     """Extracted concepts from text."""
     concepts_list: List[str] = Field(description="List of concepts")
@@ -141,11 +122,6 @@ class AnswerCheck(BaseModel):
     """Result of answer completeness check."""
     is_complete: bool = Field(description="Whether the current context provides a complete answer")
     answer: str = Field(description="The current answer based on the context")
-
-
-# ============================================================================
-# Document Processor
-# ============================================================================
 
 class DocumentProcessor:
     """Processes documents into chunks and creates embeddings."""
@@ -164,11 +140,6 @@ class DocumentProcessor:
         splits = self.text_splitter.split_documents(documents)
         self.vector_store = FAISS.from_documents(splits, self.embeddings)
         return splits, self.vector_store
-
-
-# ============================================================================
-# Knowledge Graph
-# ============================================================================
 
 class KnowledgeGraph:
     """Builds and manages a knowledge graph from document chunks."""
@@ -233,14 +204,12 @@ class KnowledgeGraph:
         if content in self.concept_cache:
             return self.concept_cache[content]
 
-        # Extract named entities using spaCy
         doc = self.nlp(content)
         named_entities = [
             ent.text for ent in doc.ents
             if ent.label_ in ["PERSON", "ORG", "GPE", "WORK_OF_ART"]
         ]
 
-        # Extract general concepts using LLM
         concept_prompt = PromptTemplate(
             input_variables=["text"],
             template="Extract key concepts (excluding named entities) from the following text:\n\n{text}\n\nKey concepts:"
@@ -307,10 +276,6 @@ class KnowledgeGraph:
         """Lemmatize a concept."""
         return ' '.join([self.lemmatizer.lemmatize(word) for word in concept.lower().split()])
 
-
-# ============================================================================
-# Query Engine
-# ============================================================================
 
 class QueryEngine:
     """Handles queries using vector store and knowledge graph traversal."""
@@ -495,11 +460,6 @@ class QueryEngine:
 
         return response
 
-
-# ============================================================================
-# GraphRAG Core
-# ============================================================================
-
 class GraphRAG:
     """Main GraphRAG system coordinating document processing, graph building, and querying."""
 
@@ -555,11 +515,6 @@ class GraphRAG:
             final_answer = final_answer.content
 
         return str(final_answer), expanded_context
-
-
-# ============================================================================
-# GraphRAG Agent (BaseAgent Adapter)
-# ============================================================================
 
 class GraphRAGAgent(BaseAgent):
     """GraphRAG Agent - Knowledge graph based RAG method adapter.

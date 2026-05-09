@@ -434,7 +434,7 @@ Answer:"""
             retrieved_count=self.retrieve_num,
             retrieved_memories=[
                 {"memory": retrieved_context, "type": "zep_retrieval"}
-            ],  # 修复：正确设置字段
+            ],  # Fix: properly set field
             extra={
                 "method": "zep",
                 "graph_id": self._current_graph_id,

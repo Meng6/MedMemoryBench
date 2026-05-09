@@ -1,9 +1,4 @@
-"""Letta (MemGPT) agent adapter for MedMemoryBench.
-
-This implementation uses Letta's official API:
-- user_message() for both memorization and queries
-- Letta Agent internally uses archival_memory_insert/archival_memory_search tools
-"""
+"""Letta (MemGPT) agent adapter for MedMemoryBench."""
 
 from __future__ import annotations
 
@@ -84,7 +79,7 @@ class LettaAgent(BaseAgent):
 
         self.memory_persona = memory_persona
         self.memory_human = memory_human
-        # 每个进程使用独立的 persistence_root，避免多进程并发写同一 SQLite 文件
+        # Use per-process persistence_root to avoid concurrent SQLite writes
         default_root = f".tmp/letta_runtime_{os.getpid()}"
         self.persistence_root = Path(kwargs.get("persistence_root", default_root)).resolve()
 

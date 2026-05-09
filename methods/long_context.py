@@ -89,7 +89,7 @@ class LongContextAgent(BaseAgent):
         **kwargs
     ) -> AgentResponse:
         """Query the agent."""
-        # 直接拼接上下文和问题，截断已在 memorize 阶段由 _truncate_if_needed 完成
+        # Concatenate context and question; truncation already done in memorize phase
         if self._context:
             full_message = f"{self._context}\n\n{question}"
         else:

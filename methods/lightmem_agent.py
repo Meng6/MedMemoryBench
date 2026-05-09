@@ -1,8 +1,4 @@
-"""LightMem agent adapter for MedMemoryBench.
-
-This adapter integrates LightMem (ICLR 2026) into the evaluation framework,
-ensuring all LLM calls go through llm_client for token tracking.
-"""
+"""LightMem agent adapter for MedMemoryBench."""
 
 from __future__ import annotations
 
@@ -1125,7 +1121,7 @@ class LightMemAgent(BaseAgent):
             output=response.content,
             query_time=0.0,
             retrieved_count=len(retrieved_memories),
-            retrieved_memories=retrieved_memories,  # 修复：正确设置字段
+            retrieved_memories=retrieved_memories,  # Fix: properly set field
             extra={
                 "method": "lightmem",
             },

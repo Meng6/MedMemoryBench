@@ -1,8 +1,4 @@
-"""
-Benchmark 数据集模块
-
-提供各类评测数据集的处理实现
-"""
+"""Benchmark dataset module."""
 
 from pathlib import Path
 from typing import Dict, Type, Optional
@@ -22,20 +18,10 @@ def create_dataset(
     data_dir: Path,
     config: Dict,
 ) -> BaseDataset:
-    """
-    创建数据集实例
-
-    Args:
-        dataset_name: 数据集名称
-        data_dir: 数据目录
-        config: 数据集配置
-
-    Returns:
-        数据集实例
-    """
+    """Create dataset instance."""
     dataset_class = DATASET_REGISTRY.get(dataset_name.lower())
     if dataset_class is None:
-        raise ValueError(f"未知的数据集: {dataset_name}，可用: {list(DATASET_REGISTRY.keys())}")
+        raise ValueError(f"Unknown dataset: {dataset_name}, available: {list(DATASET_REGISTRY.keys())}")
 
     return dataset_class(data_dir, config)
 

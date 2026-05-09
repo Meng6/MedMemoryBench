@@ -1,13 +1,4 @@
-"""MemOS agent adapter for MedMemoryBench.
-
-This implementation uses MemOS's official API:
-- extract(): Extract memories from messages using MemOS's LLM-based extractor
-- add(): Store extracted memories
-- search(): Retrieve relevant memories using vector search
-
-Token tracking is achieved by wrapping MemOS's LLM classes with our tracking logic,
-while preserving the official implementation behavior.
-"""
+"""MemOS agent adapter for MedMemoryBench."""
 
 from __future__ import annotations
 
@@ -39,10 +30,8 @@ class MemOSAgent(BaseAgent):
 
     METHOD_TYPE = "agentic_memory"
 
-    # Default API base URL
     BIGMODEL_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
 
-    # Default configuration constants for MemOS extractor LLM
     DEFAULT_EXTRACTOR_TEMPERATURE = 0
     DEFAULT_EXTRACTOR_MAX_TOKENS = 4096
 

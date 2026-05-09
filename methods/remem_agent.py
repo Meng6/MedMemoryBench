@@ -1,12 +1,4 @@
-"""ReMem agent adapter for MedMemoryBench.
-
-This adapter integrates ReMem (ICLR 2026) into the evaluation framework,
-ensuring all LLM calls go through llm_client for token tracking.
-
-ReMem: Reasoning with Episodic Memory
-- Organizes documents into a hybrid memory graph with entities, facts, and episodic gist traces
-- Combines dense retrieval with graph exploration for complex question answering
-"""
+"""ReMem agent adapter for MedMemoryBench."""
 
 from __future__ import annotations
 
@@ -36,18 +28,11 @@ from utils.llm_client import (
 
 logger = logging.getLogger(__name__)
 
-
-# ============================================================================
-# TrackedLLMWrapper - LLM调用包装器
-# ============================================================================
-
 class TrackedLLMWrapper:
-    """
-    包装 ReMem 的 LLM 调用，确保所有调用通过评测框架的 llm_client 进行。
-    实现与 CacheOpenAI 相同的接口（infer, batch_infer）。
+    """Wraps ReMem's LLM calls to route through the evaluation framework's llm_client.
 
-    这个类模拟 ReMem 的 BaseLLM 接口，但内部使用我们的 llm_client 进行调用，
-    从而确保 token 统计的准确性。
+    Implements the same interface as CacheOpenAI (infer, batch_infer) while ensuring
+    accurate token tracking via our llm_client.
     """
 
     def __init__(
@@ -64,7 +49,6 @@ class TrackedLLMWrapper:
         self.seed = seed
         self.kwargs = kwargs
 
-        # 模拟 LLMConfig 结构（ReMem 内部使用）
         self.llm_config = _LLMConfigProxy(
             llm_name=llm_name,
             temperature=temperature,
@@ -76,26 +60,18 @@ class TrackedLLMWrapper:
         messages: List[Dict[str, str]],
         **kwargs,
     ) -> Tuple[str, Dict, bool]:
-        """
-        模拟 CacheOpenAI.infer() 接口。
-
-        Args:
-            messages: OpenAI 格式的消息列表
-            **kwargs: 额外参数（temperature, response_format等）
+        """Mimics CacheOpenAI.infer() interface.
 
         Returns:
             Tuple[response_content, metadata, cache_hit]
         """
-        # 合并参数
         temperature = kwargs.get("temperature", self.temperature)
 
-        # 处理 response_format
         extra_kwargs = {}
         if "response_format" in kwargs:
             extra_kwargs["response_format"] = kwargs["response_format"]
 
         try:
-            # 通过 llm_client 调用（自动记录 token）
             response = self.llm_client.chat(
                 messages=messages,
                 temperature=temperature,
@@ -104,7 +80,7 @@ class TrackedLLMWrapper:
 
             content = response.content
 
-            # 处理 JSON 格式响应
+            # Strip markdown code fences from JSON responses
             if kwargs.get("response_format", {}).get("type") == "json_object":
                 if content.startswith("```json\n") and content.endswith("```"):
                     content = content[8:-3].strip()
@@ -129,10 +105,7 @@ class TrackedLLMWrapper:
         max_workers: int = 10,
         **kwargs,
     ) -> List[Tuple[str, Dict, bool]]:
-        """
-        模拟 CacheOpenAI.batch_infer() 接口。
-        使用线程池并行调用。
-        """
+        """Mimics CacheOpenAI.batch_infer() using a thread pool."""
         results = [None] * len(messages_list)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -153,7 +126,7 @@ class TrackedLLMWrapper:
 
 
 class _LLMConfigProxy:
-    """模拟 ReMem 的 LLMConfig 结构"""
+    """Proxy mimicking ReMem's LLMConfig structure."""
 
     def __init__(self, llm_name: str, temperature: float, seed: int):
         self.generate_params = {
@@ -164,18 +137,10 @@ class _LLMConfigProxy:
         }
 
 
-# ============================================================================
-# TrackedEmbeddingWrapper - Embedding调用包装器
-# ============================================================================
-
 class TrackedEmbeddingWrapper:
-    """
-    包装 ReMem 的 Embedding 调用。
-    支持两种模式：
-    1. 本地模型：直接调用 sentence-transformers
-    2. API调用：通过 OpenAI 兼容接口
+    """Wraps ReMem's embedding calls with support for local models and OpenAI-compatible APIs.
 
-    实现与 ReMem 的 BaseEmbeddingModel 相同的接口。
+    Implements the same interface as ReMem's BaseEmbeddingModel.
     """
 
     def __init__(
@@ -199,9 +164,9 @@ class TrackedEmbeddingWrapper:
         self.max_seq_len = max_seq_len
         self.normalize = normalize
 
-        # ReMem 需要的属性
+        # Attributes required by ReMem internals
         self.embedding_model_name = model
-        self.embedding_size = dim  # 用于 EmbeddingStore 的后备维度检测
+        self.embedding_size = dim  # Fallback dimension for EmbeddingStore
 
         self._model = None
         self._openai_client = None
@@ -214,7 +179,7 @@ class TrackedEmbeddingWrapper:
             raise ValueError(f"Unsupported embedding provider: {provider}")
 
     def _init_local_model(self):
-        """初始化本地 sentence-transformers 模型"""
+        """Initialize local sentence-transformers model."""
         try:
             from sentence_transformers import SentenceTransformer
 
@@ -224,11 +189,10 @@ class TrackedEmbeddingWrapper:
                 trust_remote_code=True,
             )
 
-            # 获取实际维度
+            # Detect actual dimension
             if self.dim is None:
                 self.dim = self._model.get_sentence_embedding_dimension()
 
-            # 更新 embedding_size（ReMem 需要）
             self.embedding_size = self.dim
 
             logger.info(f"Embedding model loaded, dim={self.dim}")
@@ -237,7 +201,7 @@ class TrackedEmbeddingWrapper:
             raise ImportError("Please install sentence-transformers: pip install sentence-transformers")
 
     def _init_api_client(self, api_key: Optional[str], base_url: Optional[str]):
-        """初始化 OpenAI 兼容的 API 客户端"""
+        """Initialize OpenAI-compatible API client for embeddings."""
         from openai import OpenAI
 
         self._openai_client = OpenAI(
@@ -248,23 +212,17 @@ class TrackedEmbeddingWrapper:
         logger.info(f"Embedding API client initialized, model={self.model_name}")
 
     def encode(self, texts: List[str], **kwargs) -> np.ndarray:
-        """
-        编码文本为嵌入向量。
-
-        Args:
-            texts: 文本列表
-            **kwargs: instruction 等额外参数
+        """Encode texts into embedding vectors.
 
         Returns:
-            np.ndarray: 形状为 (len(texts), dim) 的嵌入矩阵
+            np.ndarray of shape (len(texts), dim)
         """
         if isinstance(texts, str):
             texts = [texts]
 
-        # 处理空文本
         texts = [t if t.strip() else "empty" for t in texts]
 
-        # 处理 instruction（ReMem 用于区分 query 和 document）
+        # ReMem uses instruction prefix to distinguish queries from documents
         instruction = kwargs.get("instruction", "")
         if instruction:
             texts = [f"{instruction}{t}" for t in texts]
@@ -274,7 +232,7 @@ class TrackedEmbeddingWrapper:
         else:
             embeddings = self._encode_api(texts)
 
-        # 归一化
+        # Normalize
         if self.normalize and kwargs.get("norm", True):
             norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
             norms = np.where(norms == 0, 1, norms)
@@ -283,17 +241,17 @@ class TrackedEmbeddingWrapper:
         return embeddings
 
     def _encode_local(self, texts: List[str]) -> np.ndarray:
-        """使用本地模型编码"""
+        """Encode using local model."""
         embeddings = self._model.encode(
             texts,
             batch_size=self.batch_size,
             show_progress_bar=False,
-            normalize_embeddings=False,  # 我们自己处理归一化
+            normalize_embeddings=False,  # We handle normalization ourselves
         )
         return np.array(embeddings)
 
     def _encode_api(self, texts: List[str]) -> np.ndarray:
-        """使用 API 编码"""
+        """Encode using OpenAI-compatible API."""
         all_embeddings = []
 
         for i in range(0, len(texts), self.batch_size):
@@ -307,73 +265,65 @@ class TrackedEmbeddingWrapper:
                 all_embeddings.extend(batch_embeddings)
             except Exception as e:
                 logger.error(f"Embedding API error: {e}")
-                # 返回零向量作为后备
+                # Fall back to zero vectors
                 dim = self.dim or 1536
                 all_embeddings.extend([np.zeros(dim) for _ in batch])
 
         return np.array(all_embeddings)
 
     def batch_encode(self, texts: List[str], **kwargs) -> np.ndarray:
-        """批量编码（与 encode 相同，为了接口兼容）"""
+        """Batch encode (alias for encode, for interface compatibility)."""
         return self.encode(texts, **kwargs)
 
-
-# ============================================================================
-# RememAgent - 主适配器
-# ============================================================================
-
 class RememAgent(BaseAgent):
-    """
-    ReMem 方法适配器。
+    """ReMem adapter for MedMemoryBench.
 
-    将 ReMem (Reasoning with Episodic Memory) 集成到 MedMemoryBench 评测框架。
-    确保所有 LLM 调用通过 llm_client 进行，以便统计 token 用量。
+    Integrates ReMem (Reasoning with Episodic Memory) into the evaluation framework,
+    routing all LLM calls through llm_client for token tracking.
 
-    累积构建模式：
-    - 每 session_batch_size 个 session 触发一次图构建
-    - 图构建在 memorize() 阶段完成，确保时间统计正确
-    - query() 只负责检索和问答
+    Cumulative build mode:
+    - Graph construction is triggered in memorize() when is_last_session=True
+    - query() only handles retrieval and QA
     """
 
     METHOD_TYPE = "agentic_memory"
 
     def __init__(
         self,
-        # 基础模型配置
+        # Base model config
         model: str = "gpt-4o-mini",
         temperature: float = 0.0,
         max_tokens: int = 2000,
         provider: str = "openai",
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        # ReMem 特定参数
+        # ReMem-specific parameters
         extract_method: str = "episodic_gist",  # openie / episodic / episodic_gist / temporal
-        # 图配置
+        # Graph config
         is_directed_graph: bool = False,
         synonymy_edge_sim_threshold: float = 0.8,
         synonymy_edge_topk: int = 10,
-        # 检索配置
+        # Retrieval config
         retrieval_top_k: int = 20,
         qa_top_k: int = 10,
         linking_top_k: int = 5,
         damping: float = 0.5,
         passage_node_weight: float = 0.05,
-        # Agent配置
+        # Agent config
         use_agent: bool = False,
         agent_fixed_tools: bool = False,
         agent_max_steps: int = 5,
-        # 缓存配置
+        # Cache config
         use_cache: bool = True,
         force_index_from_scratch: bool = False,
         save_openie: bool = True,
-        # API 并发配置
-        extraction_max_workers: int = 5,  # 信息抽取的最大并发数，降低可减少 API 超时
-        # 累积构建配置
-        # session_batch_size: 累积多少个 sessions 后触发一次图构建
-        # 设为 10 以匹配评测框架的 evaluation_interval
-        # 设为 1 则禁用累积，每个 session 都立即构建
+        # API concurrency (lower values reduce API timeouts)
+        extraction_max_workers: int = 5,
+        # Cumulative build config
+        # session_batch_size: number of sessions to accumulate before triggering graph build
+        # Set to 10 to match evaluation_interval; set to 1 to disable accumulation
         session_batch_size: int = 10,
-        # Embedding 配置
+        # Embedding config
         embedding_provider: str = "local",
         embedding_model: str = "BAAI/bge-small-zh-v1.5",
         embedding_model_path: Optional[str] = None,
@@ -382,27 +332,25 @@ class RememAgent(BaseAgent):
         embedding_base_url: Optional[str] = None,
         embedding_batch_size: int = 16,
         embedding_max_seq_len: int = 512,
-        # 分块配置
+        # Chunking config
         chunk_size_tokens: int = 8000,
         chunk_overlap_tokens: int = 200,
-        # 文本预处理
+        # Text preprocessing
         text_preprocessor_class_name: str = "TextPreprocessor",
         window_sizes: Optional[List[int]] = None,
-        # 最大 token 限制
+        # Token limits
         max_input_tokens: int = 8000,
         max_context_tokens: int = 120000,
-        # 工作目录
+        # Working directory
         working_dir: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(model, temperature, max_tokens, **kwargs)
 
-        # 保存配置
         self.provider = provider
         self._api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self._base_url = base_url or os.environ.get("OPENAI_BASE_URL")
 
-        # ReMem 参数
         self.extract_method = extract_method
         self.is_directed_graph = is_directed_graph
         self.synonymy_edge_sim_threshold = synonymy_edge_sim_threshold
@@ -421,7 +369,6 @@ class RememAgent(BaseAgent):
         self.extraction_max_workers = extraction_max_workers
         self.session_batch_size = session_batch_size
 
-        # Embedding 配置
         self.embedding_provider = embedding_provider
         self.embedding_model = embedding_model
         self.embedding_model_path = embedding_model_path
@@ -431,20 +378,16 @@ class RememAgent(BaseAgent):
         self.embedding_batch_size = embedding_batch_size
         self.embedding_max_seq_len = embedding_max_seq_len
 
-        # 分块配置
         self.chunk_size_tokens = chunk_size_tokens
         self.chunk_overlap_tokens = chunk_overlap_tokens
         self.text_preprocessor_class_name = text_preprocessor_class_name
         self.window_sizes = window_sizes or [1, 3]
 
-        # Token 限制
         self.max_input_tokens = max_input_tokens
         self.max_context_tokens = max_context_tokens
 
-        # 工作目录
         self.working_dir = working_dir
 
-        # 初始化 LLM 客户端
         self._llm_client = create_llm_client(
             provider=provider,
             model=model,
@@ -454,23 +397,20 @@ class RememAgent(BaseAgent):
             base_url=base_url,
         )
 
-        # ReMem 实例池（按 context_id）
+        # ReMem instance pool (keyed by context_id)
         self._remem_instances: Dict[int, Any] = {}
 
-        # 累积缓冲区（按 context_id 存储待处理的 session 内容）
-        # 格式: {context_id: [session_text1, session_text2, ...]}
+        # Accumulation buffer: {context_id: [session_text1, session_text2, ...]}
         self._pending_sessions: Dict[int, List[str]] = {}
-        # 记录每个 context 的累积 session 数量（用于日志和返回值）
         self._session_counts: Dict[int, int] = {}
-        # 标记是否已执行索引（用于检测新的 evaluation unit）
+        # Tracks whether indexing has been performed (used to detect new evaluation units)
         self._indexed_flags: Dict[int, bool] = {}
 
-        # 设置 ReMem 模块路径
         self._setup_remem_path()
         self._remem_modules_loaded = False
 
     def _setup_remem_path(self):
-        """添加 ReMem src 到 Python 路径"""
+        """Add ReMem src directory to Python path."""
         remem_src = Path(__file__).resolve().parent / "REMem" / "src"
         if not remem_src.exists():
             raise ImportError(f"ReMem source folder not found at {remem_src}")
@@ -482,11 +422,10 @@ class RememAgent(BaseAgent):
         logger.info(f"ReMem path added: {remem_src_str}")
 
     def _load_remem_modules(self):
-        """延迟加载 ReMem 模块"""
+        """Lazy-load ReMem modules."""
         if self._remem_modules_loaded:
             return
 
-        # 导入 ReMem 核心模块
         from remem.remem import ReMem
         from remem.utils.config_utils import BaseConfig
 
@@ -497,18 +436,9 @@ class RememAgent(BaseAgent):
         logger.info("ReMem modules loaded successfully")
 
     def _build_remem_config(self, context_id: int) -> Any:
-        """
-        构建 ReMem 的 BaseConfig 配置对象。
-
-        Args:
-            context_id: 上下文ID，用于区分不同的记忆实例
-
-        Returns:
-            BaseConfig 实例
-        """
+        """Build a ReMem BaseConfig object for the given context."""
         self._load_remem_modules()
 
-        # 确定工作目录
         if self.working_dir:
             save_dir = os.path.join(self.working_dir, f"context_{context_id}")
         else:
@@ -519,97 +449,86 @@ class RememAgent(BaseAgent):
             )
         os.makedirs(save_dir, exist_ok=True)
 
-        # 构建配置
         config = self._BaseConfig(
-            # 基础配置
             dataset="medmemorybench",
             save_dir=save_dir,
 
-            # LLM 配置
+            # LLM config
             llm_name=self.model,
             llm_base_url=self._base_url,
             llm_infer_mode="online",
             temperature=self.temperature,
 
-            # 抽取 LLM（使用相同配置）
+            # Extraction LLM (same model)
             extract_llm_label=self.model,
 
-            # 信息抽取方法
+            # Extraction method
             extract_method=self.extract_method,
 
-            # 图配置
+            # Graph config
             is_directed_graph=self.is_directed_graph,
             synonymy_edge_sim_threshold=self.synonymy_edge_sim_threshold,
             synonymy_edge_topk=self.synonymy_edge_topk,
             graph_type="facts_and_sim",
 
-            # 检索配置
+            # Retrieval config
             retrieval_top_k=self.retrieval_top_k,
             qa_top_k=self.qa_top_k,
             linking_top_k=self.linking_top_k,
             damping=self.damping,
             passage_node_weight=self.passage_node_weight,
 
-            # Agent 配置
+            # Agent config
             agent_fixed_tools=self.agent_fixed_tools,
             agent_max_steps=self.agent_max_steps,
 
-            # 缓存配置
+            # Cache config
             force_index_from_scratch=self.force_index_from_scratch,
             force_openie_from_scratch=self.force_index_from_scratch,
             save_openie=self.save_openie,
 
-            # API 并发配置 - 降低并发度可减少 API 超时
+            # API concurrency
             extraction_max_workers=self.extraction_max_workers,
 
-            # Embedding 配置
+            # Embedding config
             embedding_model_name=self.embedding_model,
             embedding_batch_size=self.embedding_batch_size,
             embedding_max_seq_len=self.embedding_max_seq_len,
             embedding_return_as_normalized=True,
 
-            # 文本预处理和分块配置
-            # 重要优化：使用 "none" 模式，完全不在 ReMem 内部切分
-            # 我们在 agent 层将每个 session 作为一个完整文档传入
-            # 这样可以大幅减少 chunk 数量和 LLM 调用次数
+            # Text preprocessing: use "none" mode to skip internal chunking.
+            # Each session is passed as a whole document, significantly reducing
+            # chunk count and LLM calls.
             text_preprocessor_class_name=self.text_preprocessor_class_name,
-            preprocess_chunk_func="none",  # 不做内部切分
+            preprocess_chunk_func="none",
             preprocess_chunk_max_token_size=self.chunk_size_tokens,
             preprocess_chunk_overlap_token_size=self.chunk_overlap_tokens,
 
-            # 评估配置
-            do_eval_qa=False,  # 我们用自己的评测
+            # Evaluation (disabled - we use our own)
+            do_eval_qa=False,
             do_eval_retrieval=False,
 
-            # QA prompt
             qa_passage_prefix="- ",
         )
 
         return config
 
     def _create_tracked_remem(self, context_id: int) -> Any:
-        """
-        创建带有 token 追踪的 ReMem 实例。
-
-        通过替换 LLM 和 Embedding 组件来实现 token 统计。
-        """
+        """Create a ReMem instance with token-tracked LLM and embedding components."""
         self._load_remem_modules()
 
-        # 构建配置
         config = self._build_remem_config(context_id)
 
         logger.info(f"Creating ReMem instance for context_id={context_id}")
         logger.info(f"  extract_method: {self.extract_method}")
         logger.info(f"  save_dir: {config.save_dir}")
 
-        # 创建包装的 LLM
         tracked_llm = TrackedLLMWrapper(
             llm_client=self._llm_client,
             llm_name=self.model,
             temperature=self.temperature,
         )
 
-        # 创建 ReMem 实例，传入包装的 LLM
         remem = self._ReMem(
             global_config=config,
             llm=tracked_llm,
@@ -617,7 +536,6 @@ class RememAgent(BaseAgent):
             qa_llm=tracked_llm,
         )
 
-        # 替换 Embedding 模型
         tracked_embedding = TrackedEmbeddingWrapper(
             provider=self.embedding_provider,
             model=self.embedding_model,
@@ -635,101 +553,77 @@ class RememAgent(BaseAgent):
         return remem
 
     def _get_context_id(self) -> int:
-        """获取当前上下文ID"""
+        """Get current context ID."""
         return self._context_id if self._context_id is not None else 0
 
     def _get_remem_instance(self, context_id: int) -> Any:
-        """获取或创建指定 context_id 的 ReMem 实例"""
+        """Get or create the ReMem instance for the given context_id."""
         if context_id not in self._remem_instances:
             self._remem_instances[context_id] = self._create_tracked_remem(context_id)
         return self._remem_instances[context_id]
 
     def _format_input_documents(self, text: str) -> List[str]:
+        """Format input text as a document list for ReMem.
+
+        Passes the full session text as a single document rather than splitting it.
+        ReMem's internal text_preprocessor.batch_preprocess_doc() handles chunking
+        uniformly based on chunk_size_tokens, which is typically larger than a single
+        session, so most sessions remain intact.
         """
-        将输入文本格式化为 ReMem 期望的文档列表。
-
-        重要优化：不在 agent 层做切分，直接将完整 session 文本作为单个文档。
-        切分工作交给 ReMem 内部的 text_preprocessor.batch_preprocess_doc() 统一处理。
-
-        这样可以显著减少 chunk 数量：
-        - 旧方式：每个 session 按段落切分 → 200+ chunks (10 sessions × 20 paras)
-        - 新方式：每个 session 作为整体 → ReMem 按 chunk_size 统一切分 → 10-20 chunks
-
-        由于 chunk_size_tokens=10240 远大于单个 session 的典型大小(~2000-5000 tokens)，
-        大部分 session 会保持完整，不会被切分。
-        """
-        # 直接返回完整文本作为单个文档
-        # ReMem 内部会根据 preprocess_chunk_max_token_size 进行统一切分
         text = text.strip()
         if text:
             return [text]
         return []
 
     def memorize(self, text: str, is_last_session: bool = False, **kwargs) -> MemoryBuildResult:
-        """
-        记忆构建阶段。
+        """Memory construction phase.
 
-        设计说明：
-        =========
-        评测框架通过 is_last_session 参数告诉 Agent 当前是否是 evaluation unit 的最后一个 session。
-        - 非最后 session：只累积，不触发构建
-        - 最后一个 session：累积后触发图构建
+        The framework signals via is_last_session whether this is the last session
+        in the current evaluation unit:
+        - Not last: accumulate only, no graph build
+        - Last: accumulate then trigger graph construction
 
-        这样可以：
-        1. 正确处理噪声 session（无论多少噪声都会被累积）
-        2. 保证图构建在 memorize() 阶段完成，时间统计正确
-        3. 每个 evaluation unit 独立构建图
-
-        新 evaluation unit 检测：
-        - 通过 _indexed_flags 检测是否进入了新的 unit
-        - 如果当前 context 已被索引过，清理旧状态并重新开始
+        New evaluation unit detection uses _indexed_flags to clear old state
+        when a context that was already indexed receives new sessions.
         """
         context_id = self._get_context_id()
 
-        # 设置阶段为 memorize
         get_usage_tracker().set_phase("memorize")
 
         start_time = time.time()
 
-        # 初始化该 context 的累积缓冲区
         if context_id not in self._pending_sessions:
             self._pending_sessions[context_id] = []
             self._session_counts[context_id] = 0
 
-        # 关键：检测是否需要清理旧状态（进入新的 evaluation unit）
-        # 如果当前 context 已经被索引过，说明进入了新的 unit，需要重置
+        # Detect new evaluation unit: if already indexed, reset state
         if self._indexed_flags.get(context_id, False):
             logger.info(f"[ReMem] Context {context_id} was already indexed - new evaluation unit detected")
             logger.info(f"[ReMem] Clearing old state for fresh indexing...")
 
-            # 清理该 context 的旧状态
             if context_id in self._pending_sessions:
                 old_count = len(self._pending_sessions[context_id])
                 self._pending_sessions[context_id] = []
                 logger.info(f"[ReMem] Cleared {old_count} old pending sessions")
 
-            # 清理旧的 ReMem 实例（包含旧的图和嵌入）
             if context_id in self._remem_instances:
                 del self._remem_instances[context_id]
                 logger.info(f"[ReMem] Cleared old ReMem instance")
 
-            # 重置计数和索引标记
             self._session_counts[context_id] = 0
             self._indexed_flags[context_id] = False
 
-        # 累积 session 内容
         self._pending_sessions[context_id].append(text)
         self._session_counts[context_id] += 1
         session_count = self._session_counts[context_id]
         pending_count = len(self._pending_sessions[context_id])
 
-        # 记录到 memory_chunks（用于统计）
         self._memory_chunks.append(text)
 
         logger.info(f"[ReMem] Session {session_count} accumulated for context_id={context_id} "
                     f"(text length: {len(text)} chars, pending: {pending_count}, is_last: {is_last_session})")
 
-        # 关键：如果是最后一个 session，触发图构建
+        # Trigger graph construction on last session
         if is_last_session:
             logger.info(f"[ReMem] Last session received, triggering graph construction for {pending_count} sessions...")
 
@@ -741,7 +635,6 @@ class RememAgent(BaseAgent):
                 openie_count = flush_result.get("openie_count", 0)
                 openie_results = flush_result.get("openie_results", [])
 
-                # 从 OpenIE 结果构建 memory_entries
                 memory_entries = []
                 for doc_result in openie_results:
                     entry = {
@@ -788,7 +681,6 @@ class RememAgent(BaseAgent):
                     },
                 )
             else:
-                # 构建失败
                 error_msg = flush_result.get("error", "Unknown error") if flush_result else "Flush returned None"
                 time_cost = time.time() - start_time
                 return MemoryBuildResult(
@@ -809,7 +701,7 @@ class RememAgent(BaseAgent):
                     },
                 )
         else:
-            # 不是最后一个 session，只返回累积结果
+            # Not the last session; return accumulation result only
             time_cost = time.time() - start_time
 
             return MemoryBuildResult(
@@ -839,13 +731,9 @@ class RememAgent(BaseAgent):
             )
 
     def _flush_pending_sessions(self, context_id: int) -> Optional[Dict[str, Any]]:
-        """
-        将累积的 sessions 批量处理并构建知识图谱。
+        """Batch-process accumulated sessions and build the knowledge graph.
 
-        这是实际执行 ReMem index() 的地方。
-
-        Returns:
-            构建结果信息，如果没有待处理内容则返回 None
+        This is where ReMem's index() is actually called.
         """
         if context_id not in self._pending_sessions or not self._pending_sessions[context_id]:
             logger.info(f"[ReMem] No pending sessions for context_id={context_id}")
@@ -859,11 +747,9 @@ class RememAgent(BaseAgent):
         start_time = time.time()
 
         try:
-            # 获取 ReMem 实例
             remem = self._get_remem_instance(context_id)
 
-            # 合并所有累积的 sessions 作为文档列表
-            # 每个 session 作为一个独立文档，而非合并成一个
+            # Each session becomes an independent document
             docs = []
             for session_text in pending_texts:
                 formatted_docs = self._format_input_documents(session_text)
@@ -871,37 +757,29 @@ class RememAgent(BaseAgent):
 
             logger.info(f"[ReMem] Combined {session_count} sessions into {len(docs)} documents")
 
-            # 强制从头构建索引
+            # Force fresh index build
             original_force_index = remem.global_config.force_index_from_scratch
             original_force_openie = remem.global_config.force_openie_from_scratch
             remem.global_config.force_index_from_scratch = True
             remem.global_config.force_openie_from_scratch = True
 
-            # 调用 ReMem 官方 index 方法
             logger.info(f"[ReMem] Calling index() with extract_method={self.extract_method}")
             remem.index(docs)
 
-            # 恢复原始配置
             remem.global_config.force_index_from_scratch = original_force_index
             remem.global_config.force_openie_from_scratch = original_force_openie
 
-            # 关键修复：index 后重置 ready_to_retrieve 标志
-            # 确保下次 query 时会重新调用 prepare_retrieval_objects()
+            # Reset ready_to_retrieve so next query refreshes retrieval objects
             remem.ready_to_retrieve = False
             logger.info(f"[ReMem] Reset ready_to_retrieve=False to refresh retrieval cache on next query")
 
-            # 标记已索引
             self._indexed_flags[context_id] = True
 
-            # 收集记忆构建结果
             graph_info = remem.get_graph_info()
-
-            # 加载 OpenIE 抽取结果
             openie_results = self._load_openie_results(remem)
 
             time_cost = time.time() - start_time
 
-            # 日志报告
             logger.info(f"[ReMem] Graph construction complete in {time_cost:.2f}s")
             logger.info(f"[ReMem] Graph statistics: {graph_info}")
 
@@ -915,7 +793,6 @@ class RememAgent(BaseAgent):
                     if "facts" in doc:
                         logger.info(f"    Facts: {doc.get('facts', [])[:3]}")
 
-            # 清空累积缓冲区
             self._pending_sessions[context_id] = []
             self._is_initialized = True
 
@@ -934,7 +811,6 @@ class RememAgent(BaseAgent):
             import traceback
             traceback.print_exc()
 
-            # 清空累积缓冲区，避免重复尝试
             self._pending_sessions[context_id] = []
 
             return {
@@ -945,7 +821,7 @@ class RememAgent(BaseAgent):
             }
 
     def _load_openie_results(self, remem) -> List[Dict]:
-        """加载 OpenIE 抽取结果"""
+        """Load OpenIE extraction results from disk."""
         openie_path = remem.openie_results_path
         if os.path.exists(openie_path):
             try:
@@ -962,15 +838,13 @@ class RememAgent(BaseAgent):
         system_message: Optional[str] = None,
         **kwargs,
     ) -> AgentResponse:
-        """
-        查询阶段。
+        """Query phase.
 
-        图应该已经在 memorize() 阶段（最后一个 session 时）构建完成。
-        此方法只负责检索和问答。
+        The graph should already be built during memorize() (on the last session).
+        This method only performs retrieval and QA.
         """
         context_id = self._get_context_id()
 
-        # 设置阶段为 query
         get_usage_tracker().set_phase("query")
 
         logger.info(f"[ReMem] Starting query for context_id={context_id}")
@@ -979,7 +853,6 @@ class RememAgent(BaseAgent):
         start_time = time.time()
 
         try:
-            # 检查是否已索引
             if not self._indexed_flags.get(context_id, False):
                 logger.warning("[ReMem] No data indexed. Please call memorize() first.")
                 return AgentResponse(
@@ -993,14 +866,12 @@ class RememAgent(BaseAgent):
                     },
                 )
 
-            # 获取 ReMem 实例
             remem = self._get_remem_instance(context_id)
 
             if not remem.ready_to_retrieve:
                 logger.info("[ReMem] Preparing retrieval objects...")
                 remem.prepare_retrieval_objects()
 
-            # 使用 Agent 或 直接检索
             if self.use_agent:
                 answer, retrieved_docs, extra_info = self._query_with_agent(
                     remem, question, system_message
@@ -1016,7 +887,6 @@ class RememAgent(BaseAgent):
             logger.info(f"[ReMem] Retrieved {len(retrieved_docs)} documents")
             logger.info(f"[ReMem] Answer preview: {answer[:100]}...")
 
-            # 转换 retrieved_docs 为 retrieved_memories 格式
             retrieved_memories = [
                 {
                     "memory": doc.get("content", "")[:2000],
@@ -1062,13 +932,11 @@ class RememAgent(BaseAgent):
         question: str,
         system_message: Optional[str],
     ) -> Tuple[str, List[Dict], Dict]:
-        """
-        使用标准 RAG 流程进行查询。
+        """Standard RAG query flow using ReMem's rag_for_qa.
 
         Returns:
             Tuple[answer, retrieved_docs, extra_info]
         """
-        # 调用 ReMem 官方的 rag_for_qa 方法
         logger.info(f"[ReMem] Calling rag_for_qa with question: {question[:50]}...")
         solutions, responses, metadata, qa_results, retrieval_results = remem.rag_for_qa(
             queries=[question],
@@ -1080,16 +948,13 @@ class RememAgent(BaseAgent):
 
         logger.info(f"[ReMem] rag_for_qa returned: solutions={len(solutions) if solutions else 0}")
 
-        # 提取结果
         if solutions and len(solutions) > 0:
             solution = solutions[0]
             answer = solution.answer if hasattr(solution, 'answer') else str(solution)
 
-            # 调试：打印 solution 的属性
             logger.info(f"[ReMem] Solution type: {type(solution)}")
             logger.info(f"[ReMem] Solution has 'docs': {hasattr(solution, 'docs')}")
 
-            # 提取检索到的文档
             retrieved_docs = []
             if hasattr(solution, 'docs') and solution.docs:
                 has_doc_scores = hasattr(solution, 'doc_scores') and solution.doc_scores is not None and len(solution.doc_scores) > 0
@@ -1104,11 +969,10 @@ class RememAgent(BaseAgent):
                     })
                 logger.info(f"[ReMem] Extracted {len(retrieved_docs)} retrieved_docs from solution.docs")
             else:
-                # 备用方案：如果 solution.docs 为空，尝试从 responses 或 embedding store 获取
+                # Fallback: try responses or embedding store when solution.docs is empty
                 logger.warning(f"[ReMem] solution.docs is empty, trying fallback retrieval...")
                 retrieved_docs = self._fallback_retrieval(remem, question, responses)
 
-            # 提取图搜索种子（事实三元组）
             graph_seeds = []
             if hasattr(solution, 'graph_seeds') and solution.graph_seeds is not None:
                 try:
@@ -1131,35 +995,30 @@ class RememAgent(BaseAgent):
         question: str,
         system_message: Optional[str],
     ) -> Tuple[str, List[Dict], Dict]:
-        """
-        使用 GraphAgent 进行多步推理查询。
+        """Multi-step reasoning query using GraphAgent.
 
-        注意：这个方法通常不会被调用，因为当使用 episodic_gist 或 temporal
-        extract_method 时，ReMem 的 rag_for_qa 方法会自动使用内置的 Agent 策略。
-        这个方法仅作为手动启用 Agent 模式的备选方案。
+        Note: This is rarely invoked directly because ReMem's rag_for_qa already
+        uses an internal agent strategy for episodic_gist/temporal extract methods.
+        This serves as a manual fallback for explicit agent mode.
 
         Returns:
             Tuple[answer, retrieved_docs, extra_info]
         """
         from remem.agent.graph_agent import GraphAgent
 
-        # 准备节点内容字典
         node_chunks_dict = self._prepare_node_chunks_dict(remem)
 
-        # 创建 Agent（配置从 remem.global_config 自动读取）
         agent = GraphAgent(
             llm_model=remem.qa_llm,
             node_chunks_dict=node_chunks_dict,
             remem_instance=remem,
         )
 
-        # 使用正确的 API 进行 Agent 检索
         chunk_ids, chunk_scores, agent_logs = agent.retrieve_with_agent(
             query=question,
             beam_size=self.qa_top_k,
         )
 
-        # 获取检索到的文档内容
         retrieved_docs = []
         if chunk_ids and remem._chunk_embedding_store:
             hash_ids = [remem.passage_node_keys[idx] for idx in chunk_ids[:self.qa_top_k] if idx < len(remem.passage_node_keys)]
@@ -1172,12 +1031,10 @@ class RememAgent(BaseAgent):
                         "score": chunk_scores[i] if i < len(chunk_scores) else None,
                     })
 
-        # 提取 Agent 生成的答案
         answer = agent_logs.get("agent_answer", "") if isinstance(agent_logs, dict) else ""
 
-        # 如果 Agent 没有生成答案，使用标准 QA 流程
+        # If agent didn't produce an answer, fall back to standard QA generation
         if not answer and retrieved_docs:
-            # 使用 ReMem 的 QA 生成方法
             from remem.utils.misc_utils import QuerySolution
 
             docs_content = [d["content"] for d in retrieved_docs]
@@ -1187,7 +1044,6 @@ class RememAgent(BaseAgent):
                 doc_scores=[d.get("score", 0) for d in retrieved_docs],
             )
 
-            # 调用 QA 生成
             solutions, responses, metadata = remem.answer_each_question([solution])
             if solutions and len(solutions) > 0:
                 answer = solutions[0].answer if hasattr(solutions[0], 'answer') else str(solutions[0])
@@ -1205,24 +1061,16 @@ class RememAgent(BaseAgent):
         question: str,
         responses: Optional[List] = None,
     ) -> List[Dict]:
-        """
-        备用检索方案：当 solution.docs 为空时，尝试从 responses 或 embedding store 中获取文档。
+        """Fallback retrieval when solution.docs is empty.
 
-        这种情况通常发生在：
-        1. GraphAgent 返回的节点类型与 return_chunk 参数不匹配
-        2. hash_to_index 映射失败
-        3. agent 检索过程中出错
-
-        Returns:
-            List[Dict]: 检索到的文档列表
+        Attempts recovery from responses, semantic search on gists store,
+        or raw gist enumeration as a last resort.
         """
         retrieved_docs = []
 
-        # 尝试从 responses 中提取
         if responses and len(responses) > 0:
             response = responses[0]
             if isinstance(response, dict):
-                # 检查 agent_chunks
                 if "agent_chunks" in response and response["agent_chunks"]:
                     logger.info(f"[ReMem Fallback] Found {len(response['agent_chunks'])} agent_chunks in response")
                     for i, chunk in enumerate(response["agent_chunks"][:self.qa_top_k]):
@@ -1234,16 +1082,14 @@ class RememAgent(BaseAgent):
                         })
                     return retrieved_docs
 
-        # 尝试直接从 embedding store 检索（语义搜索）
+        # Try semantic search on embedding store
         try:
             if hasattr(remem, 'episodic_embedding_stores') and remem.episodic_embedding_stores:
                 gists_store = remem.episodic_embedding_stores.get("gists")
                 if gists_store and hasattr(gists_store, 'search'):
                     logger.info("[ReMem Fallback] Attempting semantic search on gists store...")
-                    # 获取 query embedding
                     if hasattr(remem, 'embedding_model') and remem.embedding_model:
                         query_embedding = remem.embedding_model.encode([question])[0]
-                        # 执行语义搜索
                         results = gists_store.search(query_embedding, top_k=self.qa_top_k)
                         if results:
                             logger.info(f"[ReMem Fallback] Found {len(results)} results from gists semantic search")
@@ -1258,7 +1104,7 @@ class RememAgent(BaseAgent):
                                 })
                             return retrieved_docs
 
-                # 如果语义搜索失败，尝试获取所有 gists（作为最后手段）
+                # Last resort: enumerate all gists
                 if gists_store:
                     all_ids = gists_store.get_all_ids() if hasattr(gists_store, 'get_all_ids') else []
                     if all_ids:
@@ -1281,16 +1127,14 @@ class RememAgent(BaseAgent):
         return retrieved_docs
 
     def _prepare_node_chunks_dict(self, remem: Any) -> Dict[str, str]:
-        """准备 Agent 需要的节点内容字典"""
+        """Prepare node content dictionary for GraphAgent."""
         node_chunks_dict = {}
 
-        # 添加文档块
         if remem._chunk_embedding_store:
             chunk_rows = remem.chunk_embedding_store.get_text_for_all_rows()
             for hash_id, row in chunk_rows.items():
                 node_chunks_dict[hash_id] = row.get("content", "")
 
-        # 添加实体
         if remem._phrase_embedding_store:
             phrase_rows = remem.phrase_embedding_store.get_text_for_all_rows()
             for hash_id, row in phrase_rows.items():
@@ -1299,21 +1143,21 @@ class RememAgent(BaseAgent):
         return node_chunks_dict
 
     def reset(self) -> None:
-        """重置 Agent 状态"""
+        """Reset agent state."""
         super().reset()
         self._remem_instances = {}
-        self._pending_sessions = {}  # 清理累积 session 池
-        self._session_counts = {}  # 清理计数
-        self._indexed_flags = {}  # 清理索引标记
+        self._pending_sessions = {}
+        self._session_counts = {}
+        self._indexed_flags = {}
         logger.info("[ReMem] Agent reset, all instances and pending sessions cleared")
 
     def set_context_id(self, context_id: int) -> None:
-        """设置上下文 ID"""
+        """Set the context ID."""
         super().set_context_id(context_id)
         logger.info(f"[ReMem] Context ID set to {context_id}")
 
     def get_info(self) -> Dict[str, Any]:
-        """获取 Agent 信息"""
+        """Get agent configuration and status info."""
         info = super().get_info()
         context_id = self._get_context_id()
         pending_count = len(self._pending_sessions.get(context_id, []))

@@ -178,13 +178,9 @@ class Mem0Agent(BaseAgent):
             }
         }
 
-        # Configure embedder
         if self.embedding_provider in ("local", "huggingface"):
-            # Use local HuggingFace model
             model_name_or_path = self.embedding_model_path or self.embedding_model
 
-            # Get embedding dimension from known models or config
-            # Avoid creating a temporary SentenceTransformer just to get dims
             embedding_dims = self._get_embedding_dims(model_name_or_path)
             print(f"[Mem0] Using local Embedding model: {model_name_or_path} (dims: {embedding_dims})")
 
@@ -206,7 +202,6 @@ class Mem0Agent(BaseAgent):
                 }
             }
         else:
-            # Use OpenAI API
             embedding_dims = 2048 if "embedding-3" in self.embedding_model else 1536
             mem0_config["embedder"] = {
                 "provider": "openai",
@@ -392,7 +387,7 @@ class Mem0Agent(BaseAgent):
         # Call LLM
         response = self._llm_client.chat(messages)
 
-        # 构建 retrieved_memories 格式
+        # Build retrieved_memories format
         formatted_memories = [
             {"memory": m["memory"], "type": "mem0_retrieval", "score": m.get("score", 0)}
             for m in retrieved_memories
@@ -402,7 +397,7 @@ class Mem0Agent(BaseAgent):
             output=response.content,
             query_time=0.0,
             retrieved_count=len(retrieved_memories),
-            retrieved_memories=formatted_memories,  # 修复：正确设置字段
+            retrieved_memories=formatted_memories,  # Fix: properly set field
             extra={
                 "method": "mem0",
                 "embedding_model": self.embedding_model,

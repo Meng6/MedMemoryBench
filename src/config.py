@@ -18,10 +18,6 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 
-# ============================================================================
-# Environment Configuration
-# ============================================================================
-
 @dataclass
 class APIConfig:
     """API configuration."""
@@ -105,10 +101,6 @@ def load_env_config(env_path: Optional[Path] = None) -> APIConfig:
         judge_base_url=os.getenv("JUDGE_BASE_URL", ""),
     )
 
-
-# ============================================================================
-# Method Configuration
-# ============================================================================
 
 @dataclass
 class ModelConfig:
@@ -199,10 +191,6 @@ class MethodConfig:
         )
 
 
-# ============================================================================
-# Dataset Configuration
-# ============================================================================
-
 @dataclass
 class QueryTypeConfig:
     """Query type configuration."""
@@ -276,10 +264,6 @@ class DatasetConfig:
         )
 
 
-# ============================================================================
-# Config Loader
-# ============================================================================
-
 class ConfigLoader:
     """Configuration loader."""
 
@@ -345,11 +329,6 @@ class ConfigLoader:
             return []
         return [f.stem for f in self.dataset_config_dir.glob("*.yaml")]
 
-
-# ============================================================================
-# Global Instance
-# ============================================================================
-
 _config_loader: Optional[ConfigLoader] = None
 
 
@@ -366,22 +345,18 @@ def get_api_config() -> APIConfig:
     return get_config_loader().api_config
 
 
-# ============================================================================
-# Test
-# ============================================================================
-
 if __name__ == "__main__":
     loader = ConfigLoader()
 
-    print("=== API 配置 ===")
+    print("=== API Config ===")
     api_cfg = loader.api_config
-    print(f"  OpenAI Key: {'已配置' if api_cfg.openai_api_key else '未配置'}")
-    print(f"  Azure: {'已配置' if api_cfg.use_azure else '未配置'}")
+    print(f"  OpenAI Key: {'configured' if api_cfg.openai_api_key else 'not set'}")
+    print(f"  Azure: {'configured' if api_cfg.use_azure else 'not set'}")
 
-    print("\n=== 可用方法配置 ===")
+    print("\n=== Available Method Configs ===")
     for name in loader.list_method_configs():
         print(f"  - {name}")
 
-    print("\n=== 可用数据集配置 ===")
+    print("\n=== Available Dataset Configs ===")
     for name in loader.list_dataset_configs():
         print(f"  - {name}")

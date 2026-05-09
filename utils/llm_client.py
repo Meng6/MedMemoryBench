@@ -9,11 +9,6 @@ from functools import wraps
 
 from utils.tokenizer import get_tokenizer, TokenizerProtocol
 
-
-# ============================================================================
-# Usage Tracking
-# ============================================================================
-
 @dataclass
 class TokenUsage:
     """Token usage statistics."""
@@ -98,22 +93,12 @@ def get_usage_tracker() -> LLMUsageTracker:
         _usage_tracker = LLMUsageTracker()
     return _usage_tracker
 
-
-# ============================================================================
-# Retry Configuration
-# ============================================================================
-
 # Default retry config (can be overridden via environment variables)
 DEFAULT_MAX_RETRIES = int(os.environ.get("LLM_MAX_RETRIES", "10"))
 DEFAULT_RETRY_MIN_DELAY = float(os.environ.get("LLM_RETRY_MIN_DELAY", "10.0"))
 DEFAULT_RETRY_MAX_DELAY = float(os.environ.get("LLM_RETRY_MAX_DELAY", "20.0"))
 
 logger = logging.getLogger(__name__)
-
-
-# ============================================================================
-# Custom Exceptions
-# ============================================================================
 
 class LLMAPIError(Exception):
     """LLM API error base class."""
@@ -127,10 +112,6 @@ class LLMRetryExhaustedError(LLMAPIError):
         self.last_exception = last_exception
         self.attempts = attempts
 
-
-# ============================================================================
-# Retryable Exception Detection
-# ============================================================================
 
 def _is_retryable_exception(exc: Exception) -> Tuple[bool, str]:
     """Check if exception is retryable."""
@@ -355,15 +336,12 @@ class OpenAIClient(BaseLLMClient):
         import httpx
         import socket
 
-        # Configure httpx client timeout
-        # 重要：对于长文本生成（如 ReMem 的 gist 提取），需要足够长的超时时间
-        # - gist 提取每次需要处理 4000-5000 tokens 输入 + 生成 2000-3000 tokens 输出
-        # - 这种规模的请求通常需要 60-120 秒完成
+        # Extended timeout for long-text generation (e.g. gist extraction)
         timeout = httpx.Timeout(
-            timeout=180.0,    # 总超时 180 秒（3分钟）
-            connect=30.0,     # 连接超时 30 秒
-            read=180.0,       # 读取超时 180 秒（等待 LLM 生成）
-            write=30.0,       # 写入超时 30 秒
+            timeout=180.0,
+            connect=30.0,
+            read=180.0,
+            write=30.0,
         )
 
         # Minimal connection pooling - proxy connections are unreliable for keepalive
@@ -579,11 +557,6 @@ class AnthropicClient(BaseLLMClient):
         get_usage_tracker().record(llm_response)
         return llm_response
 
-
-# ============================================================================
-# Factory Functions
-# ============================================================================
-
 def create_llm_client(
     provider: str = "openai",
     model: str = "gpt-4o-mini",
@@ -620,11 +593,6 @@ def format_messages(
         messages.append({"role": "system", "content": system_message})
     messages.append({"role": "user", "content": user_message})
     return messages
-
-
-# ============================================================================
-# Module Exports
-# ============================================================================
 
 __all__ = [
     # Response class
