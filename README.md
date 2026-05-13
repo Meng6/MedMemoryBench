@@ -10,7 +10,7 @@
 
 <p align="center">
 ｜🤗 <a href="https://huggingface.co/datasets/Cyan27/MedMemoryBench" target="_blank">HuggingFace Dataset</a> ｜
-📄 <a href="#-citations">Preprint (Coming Soon)</a> ｜
+📄 <a href="https://arxiv.org/abs/2605.11814">Preprint</a> ｜
 🌐 <a href="README_ZH.md">中文</a> ｜
 </p>
 
@@ -377,10 +377,10 @@ outputs/
 If you find MedMemoryBench useful in your research, please consider citing our work:
 
 ```bibtex
-@article{medmemorybench2026,
+@article{wang2026medmemorybench,
   title={MedMemoryBench: Benchmarking Agent Memory in Personalized Healthcare},
-  author={TODO},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  author={Yihao Wang and Haoran Xu and Renjie Gu and Yixuan Ye and Xinyi Chen and Xinyu Mu and Yuan Gao and Chunxiao Guo and Peng Wei and Jinjie Gu and Huan Li and Ke Chen and Lidan Shou},
+  journal={arXiv preprint arXiv:2605.11814},
   year={2026}
 }
 ```
