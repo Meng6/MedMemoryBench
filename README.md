@@ -10,7 +10,7 @@
 
 <p align="center">
 ｜🤗 <a href="https://huggingface.co/datasets/Cyan27/MedMemoryBench" target="_blank">HuggingFace Dataset</a> ｜
-📄 <a href="https://arxiv.org/abs/2605.11814">Preprint</a> ｜
+📄 <a href="https://arxiv.org/abs/2605.11814">Arxiv Preprint</a> ｜
 🌐 <a href="README_ZH.md">中文</a> ｜
 </p>
 
