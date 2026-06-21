@@ -18,7 +18,6 @@
 /generation/outputs
 /generation/logs
 /generation/uv.lock
-/generation/pyproject.toml
 !/generation/.env.example
 
 # Python

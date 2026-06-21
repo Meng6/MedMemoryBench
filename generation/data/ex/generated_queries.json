@@ -1,0 +1,425 @@
+{
+  "metadata": {
+    "export_time": "2026-06-21T12:36:51.604287",
+    "total_queries": 9,
+    "queries_by_type": {
+      "entity_exact_match": 2,
+      "temporal_localization": 2,
+      "state_update": 1,
+      "multiple_choice": 2,
+      "inference_generation": 2
+    },
+    "source_file": "data/generated_dialogues.json",
+    "generation_mode": "dedup"
+  },
+  "queries": [
+    {
+      "query_id": "session_10_eem_1",
+      "session_id": 10,
+      "query_type": "entity_exact_match",
+      "question": "What is the name of the medication that can be adjusted to a fixed dosing time to better cover morning blood pressure?",
+      "answers": [
+        {
+          "content": "valsartan",
+          "is_correct": true,
+          "explanation": "The content specifies valsartan as the medication that can be adjusted."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Medication Guidance",
+          "name": "Adjusting valsartan timing",
+          "content": "Changing valsartan to a fixed dosing time between 8–9 p.m. each night can better cover early-morning blood pressure and improve morning blood pressure surge.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 1
+        }
+      ],
+      "metadata": {
+        "entity_type": "medication",
+        "entity_value": "valsartan",
+        "answer_format": "medication_name",
+        "difficulty": "easy"
+      }
+    },
+    {
+      "query_id": "session_10_eem_2",
+      "session_id": 10,
+      "query_type": "entity_exact_match",
+      "question": "What is the recommended method for measuring morning blood pressure?",
+      "answers": [
+        {
+          "content": "average of two measurements",
+          "is_correct": true,
+          "explanation": "Morning blood pressure should be measured by taking the average of two measurements."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Blood Pressure Measurement Methods",
+          "name": "Morning BP measurement",
+          "content": "Morning blood pressure should be measured within 1 hour after getting up. You may first clear sputum, drink some water, sit still, and then measure. Take the average of two measurements.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 1
+        }
+      ],
+      "metadata": {
+        "entity_type": "test_value",
+        "entity_value": "average of two measurements",
+        "answer_format": "text",
+        "difficulty": "easy"
+      }
+    },
+    {
+      "query_id": "session_10_tla_1",
+      "session_id": 10,
+      "query_type": "temporal_localization",
+      "question": "What spike in blood pressure can occur during morning coughing?",
+      "answers": [
+        {
+          "content": "5–10 mmHg",
+          "is_correct": true,
+          "explanation": "The effect of morning coughing or forceful expectoration causes a transient spike in blood pressure of 5–10 mmHg."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Symptom Observation",
+          "name": "Effect of cough on blood pressure",
+          "content": "Morning coughing or forceful expectoration can cause a transient 5–10 mmHg spike in blood pressure, but it will not lead to persistent morning hypertension of 150/95 over consecutive days.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 2
+        }
+      ],
+      "metadata": {
+        "time_type": "event_at_time",
+        "target_time": "Morning",
+        "difficulty": "easy"
+      }
+    },
+    {
+      "query_id": "session_10_tla_2",
+      "session_id": 10,
+      "query_type": "temporal_localization",
+      "question": "What happens to blood pressure due to forceful coughing in the morning?",
+      "answers": [
+        {
+          "content": "Transitory increase in blood pressure",
+          "is_correct": true,
+          "explanation": "Forceful coughing in the morning can raise blood pressure transiently."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Measurement Guidance",
+          "name": "Cough and morning BP",
+          "content": "Forceful coughing in the morning can transiently raise blood pressure. If there is no discomfort and the blood pressure is still around 150/95, in most cases this is because the drug effect has not fully taken hold yet, rather than inadequate blood pressure control.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 8
+        }
+      ],
+      "metadata": {
+        "time_type": "event_at_time",
+        "target_time": "morning",
+        "difficulty": "easy"
+      }
+    },
+    {
+      "query_id": "session_10_sua_1",
+      "session_id": 10,
+      "query_type": "state_update",
+      "question": "If a patient has switched their valsartan from evening to morning dosing for better coverage, what is the current dosing recommendation time for valsartan?",
+      "answers": [
+        {
+          "content": "Morning dosing recommended but specific time not provided",
+          "is_correct": true,
+          "explanation": "Switching valsartan to morning is recommended for better coverage of early-morning blood pressure, though the exact time is not specified in the knowledge points."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Medication Guidance",
+          "name": "Adjusting valsartan timing",
+          "content": "Changing valsartan to a fixed dosing time between 8–9 p.m. each night can better cover early-morning blood pressure and improve morning blood pressure surge.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 1
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Amlodipine dose increase",
+          "content": "Amlodipine can be gradually increased from 5 mg to 7.5 mg by taking one whole 5 mg tablet plus half of another 5 mg tablet, still taken once in the morning.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 2
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Switch valsartan to morning",
+          "content": "For morning‑surge hypertension, switching valsartan from evening to morning dosing can better cover early‑morning blood pressure and is usually more effective than simply increasing the dose of amlodipine.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 3
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Dual therapy safety",
+          "content": "Taking amlodipine and valsartan together in the morning does not affect each other’s efficacy and does not significantly increase the risk of dizziness; it is a common and safe combination in clinical practice.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 3
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Best time for valsartan",
+          "content": "To cover early-morning blood pressure, it is recommended to take valsartan 160 mg between 19:00 and 20:00 in the evening, which can better suppress the blood pressure peak from the early hours before dawn to the morning.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 4
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Dosing time window",
+          "content": "Valsartan does not need to be taken at an exact minute; as long as it is taken between 19:00 and 21:00, its effectiveness in covering early-morning blood pressure will not be significantly affected.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 4
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Third-step add-on",
+          "content": "If morning blood pressure remains high after valsartan 160 mg plus amlodipine 10 mg, the third step is usually to prioritize adding a low-dose diuretic, and only then consider a beta-blocker or a triple-combination preparation.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 5
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Taking indapamide together",
+          "content": "Indapamide, whether 1.25 mg or 2.5 mg, can be taken in the morning together with amlodipine; there is no need to separate the dosing times.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 6
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Evening valsartan",
+          "content": "If insufficient nighttime coverage leads to elevated morning blood pressure, the dosing time of valsartan 160 mg can be shifted from early evening to closer to bedtime (around 9 p.m.) to enhance the blood pressure–lowering effect in the early morning.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 7
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "Indapamide alternate-day up-titration",
+          "content": "When increasing indapamide from 1.25 mg to 2.5 mg, you can first use an alternate-day regimen of 2.5 mg one day and 1.25 mg the next day, to reduce the risk of morning dizziness or volume depletion after the dose increase.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 8
+        },
+        {
+          "category": "Medication Guidance",
+          "name": "2.5 mg urination adaptation",
+          "content": "After changing indapamide to 2.5 mg once daily, a slight increase in urination in the mornings during the first few days is a normal adaptation and usually stabilizes within about a week.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 9
+        }
+      ],
+      "metadata": {
+        "state_type": "medication",
+        "change_type": "specific_change",
+        "focus_session": "10",
+        "difficulty": "medium",
+        "change_description": "Valsartan dosing switched from evening to morning for better hypertension control."
+      }
+    },
+    {
+      "query_id": "session_10_mq_1",
+      "session_id": 10,
+      "query_type": "multiple_choice",
+      "question": "Doctor, my blood pressure was 135/85 this afternoon — should I lower my medication?",
+      "answers": [
+        {
+          "content": "A. Yes, reduce your medication dose.",
+          "is_correct": false,
+          "explanation": "Although reasonable in general, not applicable because a single elevated reading does not warrant dosage adjustment."
+        },
+        {
+          "content": "B. Maintain your current medication and monitor.",
+          "is_correct": true,
+          "explanation": "Suitable for this patient because overall trends should dictate medication management, not isolated readings."
+        },
+        {
+          "content": "C. Adjust medication based on today's stress level.",
+          "is_correct": false,
+          "explanation": "Although reasonable in general, not applicable because stress-related readings shouldn't trigger immediate medication changes."
+        },
+        {
+          "content": "D. Consult with a hypertension specialist about dosage changes.",
+          "is_correct": true,
+          "explanation": "Suitable for this patient because monitoring trends may suggest a need for expert evaluation but does not necessitate immediate action."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Measurement Guidance",
+          "name": "Afternoon BP trend",
+          "content": "Occasional afternoon readings of 135/85 are normal fluctuations. You should judge whether there is a pattern of higher in the morning and lower at noon based on the overall trend of higher in the morning and lower in the evening, rather than being influenced by a single value.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 10
+        }
+      ],
+      "metadata": {
+        "difficulty": "hard",
+        "correct_count": "2",
+        "trap_count": "2",
+        "trap_design": {
+          "trap_type": "Time/State Change",
+          "trap_mechanism": "The trap works by suggesting immediate medication adjustments based on a single elevated reading, which can mislead practitioners unaware of the context involving stress and overall trends.",
+          "why_others_fail": "Someone without knowledge of the patient's complete history might incorrectly assume that any high reading should prompt an adjustment in medication.",
+          "required_patient_info": [
+            "Patient's history of hypertension",
+            "Context of the elevated reading (stressful workday)"
+          ]
+        }
+      }
+    },
+    {
+      "query_id": "session_10_mq_2",
+      "session_id": 10,
+      "query_type": "multiple_choice",
+      "question": "Doctor, I'm thinking of increasing my indapamide dose — what do you recommend?",
+      "answers": [
+        {
+          "content": "A. Switch to 2.5 mg daily right away.",
+          "is_correct": false,
+          "explanation": "Although reasonable in general, not applicable because sudden increase may cause dizziness without considering recent activity levels."
+        },
+        {
+          "content": "B. Start with 2.5 mg every other day.",
+          "is_correct": true,
+          "explanation": "Suitable for this patient because it helps mitigate the risk of dizziness and volume depletion after dose increase."
+        },
+        {
+          "content": "C. Increase to 2.5 mg and monitor symptoms closely.",
+          "is_correct": false,
+          "explanation": "Although reasonable in general, not applicable because close monitoring does not address the potential for acute dizziness."
+        },
+        {
+          "content": "D. Consult with a specialist before making any changes.",
+          "is_correct": true,
+          "explanation": "Suitable for this patient because it ensures a tailored approach considering their specific medication needs and potential risk factors."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Medication Guidance",
+          "name": "Indapamide alternate-day up-titration",
+          "content": "When increasing indapamide from 1.25 mg to 2.5 mg, you can first use an alternate-day regimen of 2.5 mg one day and 1.25 mg the next day, to reduce the risk of morning dizziness or volume depletion after the dose increase.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 8
+        }
+      ],
+      "metadata": {
+        "difficulty": "hard",
+        "correct_count": "2",
+        "trap_count": "2",
+        "trap_design": {
+          "trap_type": "temporal_state",
+          "trap_mechanism": "The trap relies on a patient’s recent increase in physical activity, which could affect their response to medication changes.",
+          "why_others_fail": "Someone without knowledge of the patient's information might assume that a direct dosage increase is optimal without considering recent activities that could exacerbate side effects.",
+          "required_patient_info": [
+            "Patient's recent increase in physical activity level",
+            "Any history of dizziness or hypotension"
+          ]
+        }
+      }
+    },
+    {
+      "query_id": "session_10_ig_1",
+      "session_id": 10,
+      "query_type": "inference_generation",
+      "question": "Doctor, my blood pressure is low after coughing—what should I do?",
+      "answers": [
+        {
+          "content": "Your readings seem to be linked to your recent cough. Monitor at rest; no treatment needed unless dizziness occurs.",
+          "is_correct": true,
+          "explanation": "This answer acknowledges the patient's recent respiratory condition and the context of their low blood pressure readings. Since these readings occur post-cough and there’s no discomfort, they are likely benign unless associated with dizziness."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Safety Range",
+          "name": "Low BP criteria",
+          "content": "Occasional readings of 108/72 after coughing, without discomfort, are generally safe. What truly requires attention is a persistently low blood pressure below 100/65 at rest, accompanied by marked dizziness.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 9
+        }
+      ],
+      "metadata": {
+        "difficulty": "hard",
+        "inference_type": "Clinical reasoning based on patient context",
+        "trap_design": {
+          "trap_type": "temporal_change",
+          "trap_mechanism": "This trap highlights the risk of misinterpreting transient low blood pressure readings as a chronic condition due to recent health changes.",
+          "required_patient_info": [
+            "Recent respiratory condition",
+            "Cough episodes",
+            "Current absence of discomfort",
+            "Awareness that low readings are transient"
+          ]
+        },
+        "common_wrong_answer": {
+          "content": "You should monitor your blood pressure regularly and consider treatment for hypotension since it has fallen low.",
+          "why_wrong": "This response fails to consider that the low blood pressure is linked to recent coughing episodes and is not indicative of chronic hypotension or a need for treatment unless accompanied by symptoms."
+        }
+      }
+    },
+    {
+      "query_id": "session_10_ig_2",
+      "session_id": 10,
+      "query_type": "inference_generation",
+      "question": "Doctor, my family loves salty foods — can I still have them?",
+      "answers": [
+        {
+          "content": "You can enjoy salty foods occasionally; just balance the overall intake and monitor your health closely.",
+          "is_correct": true,
+          "explanation": "This response takes into account the patient's cultural context and dietary preferences, suggesting moderation while still being mindful of health needs."
+        }
+      ],
+      "source_key_points": [
+        {
+          "category": "Lifestyle Management",
+          "name": "Optimal salt restriction",
+          "content": "Keeping daily salt intake at 5–6 grams is most appropriate. This avoids hyponatremia-related fatigue while not compromising the effect of diuretics or overall blood pressure control.",
+          "trap_score": 0.1,
+          "time": null,
+          "session_id": 6
+        }
+      ],
+      "metadata": {
+        "difficulty": "hard",
+        "inference_type": "Inference type",
+        "trap_design": {
+          "trap_type": "lifestyle",
+          "trap_mechanism": "The patient's cultural preference for salty foods conflicts with standard dietary guidelines, making it critical to assess individual habits for proper advice.",
+          "required_patient_info": [
+            "Patient's cultural dietary practices and preferences",
+            "Willingness to adjust salt intake without compromising cultural values"
+          ]
+        },
+        "common_wrong_answer": {
+          "content": "It's important to limit your salt intake to 5–6 grams daily for heart health.",
+          "why_wrong": "This response provides a standard recommendation without consideration for the patient's cultural dietary practices, potentially leading to non-compliance and dissatisfaction."
+        }
+      }
+    }
+  ]
+}
